@@ -2,7 +2,7 @@ clear
 close all
 clc
 
-patientName = 'phantom_polygon_10cm_100m';
+patientName = 'phantom_polygon_10cm_10m';
 projectName = 'PairProd';
 patFolder = fullfile('D:\datatest\PairProd\',patientName);
 projectFolder = fullfile(patFolder,projectName);
@@ -11,7 +11,7 @@ dosematrixFolder = fullfile(projectFolder,'dosematrix');
 resultFolder = fullfile(projectFolder,'result');
 mkdir(resultFolder)
 
-load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']));
+load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'energy','sortedtime','sortInd','detectorIds');
 load(fullfile(dosematrixFolder,[patientName projectName '_M_HighRes.mat']),'M','M_Anni','dose_data','masks');
 load(fullfile(dosematrixFolder,[patientName projectName '_dicomimg.mat']),'img','imgres');
 
@@ -27,7 +27,7 @@ maclist = [0.0095 0.0096  0.0096   0.0095    0.0089];
 rholist = [0.3     0.92      1      1.05      1.6  ];
 mulist = maclist.*rholist;
 
-% x_CT = phantom(:,:,ceil(end/2));
+% x_CT = img(:,:,ceil(end/2));
 % mumap = interp1(hulist,mulist,x_CT(:),'linear');
 % mumap(x_CT>max(hulist)) = max(mulist);
 % mumap(x_CT<min(hulist)) = min(mulist);
@@ -55,12 +55,13 @@ mumap(1:end-ind1,ind2+1:end) = mumapold(ind1+1:end,1:end-ind2 );
 
 %% Identify LOR
 EnergyResolution = 0.1;
-CoincidenceTime = 2;  % ns 
+CoincidenceTime = 4;  % ns 
 
 Ind_coin_511 = IdentifyLOR_511(energy, sortedtime, sortInd, CoincidenceTime);
 Ind_coin_accept = IdentifyLOR(energy, sortedtime, sortInd, CoincidenceTime, EnergyResolution);
 
 TruePositive = length(Ind_coin_511)/length(Ind_coin_accept);
+% save(fullfile(dosematrixFolder,[patientName projectName '_detid_pair.mat']),'Ind_coin_511','Ind_coin_accept');
 
 %% Image Reconstruction
 R1 = 1200;
@@ -102,10 +103,14 @@ img_fbp_gtsino = em_fbp_QL(sg, ig, sino_FP);
 figure;imshow(sino_FP,[])
 sino_correct = sino./ci;
 
+test = sino_correct/sum(sino_correct(:))-sino_FP/sum(sino_FP(:));
+figure;imshow([test/sum(abs(test(:))); sino_correct/sum(sino_correct(:)); sino_FP/sum(sino_FP(:))],[])
 figure;imshow([sino_correct/sum(sino_correct(:)); sino_FP/sum(sino_FP(:))],[])
 figure;imshow([sinobuff/sum(sinobuff(:)); sino/sum(sino(:)); sino_FP/sum(sino_FP(:))],[])
 figure;imshow([img_fbp_gtsino/max(img_fbp_gtsino(:)) img_fbp/max(img_fbp(:))],[])
-figure;imshow([sino/sum(sino(:))-sino_FP/sum(sino_FP(:))],[])
+figure;imshow([sino_correct/sum(sino_correct(:))-sino_FP/sum(sino_FP(:))],[])
+figure;imshow([img_fbp_nocorrect/max(img_fbp_nocorrect(:))],[])
+figure;imshow([img_fbp/max(img_fbp(:))],[])
 
 figure;imshow([img_fbp_gtsino/max(img_fbp_gtsino(:))-img_fbp_nocorrect/max(img_fbp_nocorrect(:))],[])
 
@@ -126,7 +131,7 @@ figure;imshow(img_ci/max(img_ci(:)),[0,0.005])
 %% TOF reconstruction
 count = 1;
 for TR = [0.2,0.6,1,1.5 2]
-    [sino3D, dr, sinobuff3D] = rebin_PET_TOF(CorrectedTime, detectorIds, Ind_coin_accept, TR, reconparams);
+    [sino3D, dr, sinobuff3D] = rebin_PET_TOF(reconparams, detid_pair, deltat, TR);
     sino3DAll{count} = sino3D;
     sinobuff3DAll{count} = sinobuff3D;
     [nd,na] = size(ci);

@@ -129,7 +129,7 @@ doserate = 0.1/60; % (0.1Gy/min)
 time = max(dose_onebeam(:))*numevent/doserate;
 eventrate = time/numevent*1e+09; % ns
 
-numeventbatch = 1e+05;
+numeventbatch = 1e+06;
 numbatches = numevent/numeventbatch;
 deltatime_event = normrnd(eventrate,eventrate/5,numeventbatch,numbeamlets);
 cumsum_eventtime_batch = cumsum(deltatime_event);

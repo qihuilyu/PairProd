@@ -96,7 +96,7 @@ figure;imshow(img_gt,[])
 
 %% FBP
 detid_pair = mod(round([alpha1 alpha2]/(2*pi)*nb_cryst),nb_cryst) + 1;
-[sino, dr, sinobuff] = rebin_PET2(detid_pair, nb_cryst, R1, distrange);
+[sino, dr, newunidist, sinobuff, unidist] = rebin_PET2(detid_pair, nb_cryst, R1, distrange);
 ig = image_geom('nx', size(img,2), 'ny', size(img,1), 'fov', size(img,1)*imgres);
 sg = sino_geom('par', 'nb', size(sino,1), 'na', size(sino,2), 'dr', dr);
 img_fbp = em_fbp_QL(sg, ig, sino)';
@@ -106,10 +106,10 @@ ForBack.applyFP = @(x) G*x(:);
 sino_FP = reshape(ForBack.applyFP(x_norm'),size(sino));
 img_fbp_gtsino = em_fbp_QL(sg, ig, sino_FP)';
 
-figure;imshow([flip(sino,1)/sum(sino(:)); sino_FP/sum(sino_FP(:))],[])
-figure;imshow([flip(sinobuff,1)/sum(sinobuff(:)); flip(sino,1)/sum(sino(:)); sino_FP/sum(sino_FP(:))],[])
+figure;imshow([sino/sum(sino(:)); sino_FP/sum(sino_FP(:))],[])
+figure;imshow([sinobuff/sum(sinobuff(:)); sino/sum(sino(:)); sino_FP/sum(sino_FP(:))],[])
 figure;imshow([img_fbp_gtsino/max(img_fbp_gtsino(:)) img_fbp/max(img_fbp(:))],[])
-figure;imshow([flip(sino,1)/sum(sino(:))-sino_FP/sum(sino_FP(:))],[])
+figure;imshow([sino/sum(sino(:))-sino_FP/sum(sino_FP(:))],[])
 
 %% Reconstruction-less image generation
 reconparams = struct('nb_cryst',nb_cryst,'R1',R1,'distrange',distrange,...
@@ -129,7 +129,7 @@ for TR = [0.002,0.02,0.2,0.6,1.2,2]
     [sino3D, dr, sinobuff3D] = rebin_PET_TOF(reconparams, detid_pair, deltat, TR);
     sino3DAll{count} = sino3D;
     sinobuff3DAll{count} = sinobuff3D;
-    sino3DAll{count} = flip(flip(sino3D,1),2);
+    sino3DAll{count} = flip(sino3D,2);
     img_toffbp{count} = em_toffbp_QL(sg, ig, sino3DAll{count})';
     img_tofbp{count} = em_tof_backprojection_QL(sg, ig, sino3DAll{count})';
    

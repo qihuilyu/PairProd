@@ -22,7 +22,7 @@ pC = pC(gooddetind,:);
 xC = pC(:,1);
 yC = pC(:,2);
 dist(yC<0) = -dist(yC<0);
-dist(yC==0) = dist(yC==0).*sign(xC(yC==0));
+dist(yC==0) = -dist(yC==0).*sign(xC(yC==0));
 [unidist, ~, inddist] = unique(dist);
 
 inddist = max(inddist) + 1 - inddist;
