@@ -105,10 +105,6 @@ energy(badID,:) = [];
 eventIds(badID,:) = [];
 globalTimes(badID,:) = [];
 Mega(badID,:) = [];
-% randind = ceil(rand(100,1)*numel(Ind_coin21));
-% test = [Mega(Ind_coin21(randind),:) Mega(Ind_coin22(randind),:)];
-% mask1 = (eventIds==1936602&beamletNo==32&beamNo==8&detectorIds==1440);
-% find(mask1)
 save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','-v7.3');
 
 %% fluence map segments
