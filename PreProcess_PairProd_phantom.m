@@ -2,7 +2,7 @@ clear
 close all
 clc
 
-patientName = 'phantom_10cm';
+patientName = 'phantom_polygon_10cm_10m';
 projectName = 'PairProd';
 patFolder = fullfile('/media/raid1/qlyu/PairProd/datatest',patientName);
 dosecalcFolder = fullfile(patFolder,'dosecalc');
@@ -75,7 +75,9 @@ AlleventID = (beamletIDs-1)*numevent + eventIds;
 nb_cryst = max(detectorIds);
 AlldetectorID = (AlleventID-1)*nb_cryst + detectorIds;
 [sortedAlldetectorID, sortAlldetectorIDInd] = sort(AlldetectorID);
-sortInd_sameparticle = find(diff(sortedAlldetectorID)==1);
+AlldetectorID2 = (AlleventID-1)*nb_cryst + mod(detectorIds,nb_cryst);
+[sortedAlldetectorID2, sortAlldetectorIDInd2] = sort(AlldetectorID2);
+sortInd_sameparticle = find(diff(sortedAlldetectorID)==1 | diff(sortedAlldetectorID2)==1);
 Ind_coin1 = sortAlldetectorIDInd(sortInd_sameparticle);
 Ind_coin2 = sortAlldetectorIDInd(sortInd_sameparticle+1);
 
@@ -113,15 +115,22 @@ doserate = 0.1/60; % (0.1Gy/min)
 time = max(dose_onebeam(:))*numevent/doserate;
 eventrate = time/numevent*1e+09; % ns
 
-deltatime_event = normrnd(eventrate,eventrate/5,numevent,numbeamlets);
-cumsum_eventtime = cumsum(deltatime_event);
-event_beamletIDs = sub2ind([numevent,numbeamlets], eventIds, beamletIDs);
+numeventbatch = 1e+06;
+numbatches = numevent/numeventbatch;
+deltatime_event = normrnd(eventrate,eventrate/5,numeventbatch,numbeamlets);
+cumsum_eventtime_batch = cumsum(deltatime_event);
+
+event_perbatchIDs = mod(eventIds-1, numeventbatch)+1;
+event_batchID = (eventIds - event_perbatchIDs)/numeventbatch + 1;
+event_perbatch_beamletIDs = sub2ind([numeventbatch,numbeamlets], event_perbatchIDs, beamletIDs);
 
 numbeams = max(beamNo(:));
-beamtime = max(cumsum_eventtime(event_beamletIDs));
+batchtime = max(cumsum_eventtime_batch(event_perbatch_beamletIDs));
+beamtime = batchtime*numbatches;
 deltatime_beam = beamtime*(1:numbeams)'; % 1 ms
 
-CorrectedTime = globalTimes + cumsum_eventtime(event_beamletIDs) + deltatime_beam(beamNo);
+CorrectedTime = globalTimes + cumsum_eventtime_batch(event_perbatch_beamletIDs)...
+        + event_batchID*batchtime + beamNo*beamtime;
 [sortedtime, sortInd] = sort(CorrectedTime);
 save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'CorrectedTime','sortedtime','sortInd','-append');
 

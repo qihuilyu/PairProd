@@ -2,7 +2,7 @@ clear
 close all
 clc
 
-patientName = 'phantom_10cm';
+patientName = 'phantom_polygon_10cm_10m';
 projectName = 'PairProd';
 patFolder = fullfile('/media/raid1/qlyu/PairProd/datatest',patientName);
 projectFolder = fullfile(patFolder,projectName);
@@ -102,7 +102,7 @@ ci3D = repmat(reshape(ci,[nd,1,na]),[1,nd,1]);
 sinoflipped = flip(flip(sino3D./ci3D,1),2);
 [img_toffbp] = em_toffbp_QL(sg, ig, sinoflipped);
  
- figure;imshow([Anni2D/max(Anni2D(:)) img_fbp/max(img_fbp(:)) img_toffbp/max(img_toffbp(:)) img_direct/max(img_direct(:))],[])
+figure;imshow([Anni2D/max(Anni2D(:)) img_fbp/max(img_fbp(:)) img_toffbp/max(img_toffbp(:)) img_direct/max(img_direct(:))],[])
 
 
 
