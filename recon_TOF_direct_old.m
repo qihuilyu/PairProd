@@ -1,10 +1,4 @@
-function [img_direct, img_ci, img_ciN] = recon_TOF_direct(reconparams, detid_pair, deltat, varargin)
-
-if(~isempty(varargin))
-    cilist = varargin{1};
-else
-    cilist = ones(size(detid_pair,1),1);
-end
+function img_direct = recon_TOF_direct(CorrectedTime, detectorIds, Ind_coin_accept, cilist, reconparams)
 
 nb_cryst = reconparams.nb_cryst;
 R1 = reconparams.R1;
@@ -12,6 +6,11 @@ distrange = reconparams.distrange;
 imgres = reconparams.imgres;
 imgsize = reconparams.imgsize;
 
+Ind_coin1_accept = Ind_coin_accept(:,1);
+Ind_coin2_accept = Ind_coin_accept(:,2);
+detid_pair = [detectorIds(Ind_coin1_accept) detectorIds(Ind_coin2_accept)];
+
+deltat = CorrectedTime(Ind_coin1_accept) - CorrectedTime(Ind_coin2_accept);
 clight = 300; % c = 300mm/ns
 deltar = deltat*clight/2; 
 
@@ -33,8 +32,6 @@ xp0 = p0(:,1);
 yp0 = p0(:,2);
 
 img_direct = zeros(imgsize(1),imgsize(2));
-img_ci = zeros(imgsize(1),imgsize(2));
-img_ciN = zeros(imgsize(1),imgsize(2));
 xImage = ((1:imgsize(1))-(1+imgsize(1))/2)*imgres;
 yImage = ((1:imgsize(2))-(1+imgsize(2))/2)*imgres;
 
@@ -50,8 +47,6 @@ for ii = 1:length(xp0)
     [~,yind] = min(abs(iyp0-yImage));
 
     img_direct(xind,yind) = img_direct(xind,yind) + 1/cilist(ii);
-    img_ci(xind,yind) = (img_ci(xind,yind)*img_ciN(xind,yind) + cilist(ii))/(img_ciN(xind,yind) + 1);
-    img_ciN(xind,yind) = img_ciN(xind,yind) + 1;
 end
 
 

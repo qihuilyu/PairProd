@@ -12,6 +12,7 @@ Backward = ForBack.applyBP;
 % Initialize the input image
 g(g<0)=0;
 g(logical(isnan(g)))=0;
+g = g(:);
 
 % Initialization.
 N = prod(ImageSize);

@@ -1,9 +1,14 @@
-function [sino, inter, Sino3Dbuff] = rebin_PET_TOF(reconparams, detid_pair, deltat, TR)
+function [sino, inter, Sino3Dbuff] = rebin_PET_TOF_old(CorrectedTime, detectorIds, Ind_coin_accept, TR, reconparams)
 
 nb_cryst = reconparams.nb_cryst;
 R1 = reconparams.R1;
 distrange = reconparams.distrange;
 
+Ind_coin1_accept = Ind_coin_accept(:,1);
+Ind_coin2_accept = Ind_coin_accept(:,2);
+detid_pair = [detectorIds(Ind_coin1_accept) detectorIds(Ind_coin2_accept)];
+
+deltat = CorrectedTime(Ind_coin1_accept) - CorrectedTime(Ind_coin2_accept);
 clight = 300; % c = 300mm/ns
 deltar = deltat*clight/2; 
 
@@ -38,9 +43,10 @@ dist(yC<0) = -dist(yC<0);
 dist(yC==0) = dist(yC==0).*sign(xC(yC==0));
 [unidist, ~, inddist] = unique(dist);
 
-inter = max(abs(diff(unidist)));
-maxabsunidist = max(abs(unidist));
-newunidist = linspace(-maxabsunidist,maxabsunidist,floor(2*maxabsunidist/inter))';
+maxunidist = max(unidist);
+minunidist = min(unidist);
+inter = (maxunidist - minunidist)/(numel(unidist)-1);
+newunidist = (minunidist:inter:maxunidist)';
 
 p0_pC = p0-pC;
 xp0pC = p0_pC(:,1);
@@ -49,14 +55,13 @@ distp0 = round(sqrt(sum((p0_pC).^2,2)),4);
 distp0(xp0pC<0) = -distp0(xp0pC<0);
 distp0(xp0pC==0) = distp0(xp0pC==0).*sign(yp0pC(xp0pC==0));
 
-nd0 = numel(unidist);
-nd = numel(newunidist);
+nd = numel(unidist);
 na = numel(uniang);
-Sino3Dbuff = zeros(nd0,nd,na);
+Sino3Dbuff = zeros(nd,nd,na);
 
 sigma = clight*TR/2;
-gaussFilter = exp(-(newunidist'-distp0) .^ 2 / (2 * sigma ^ 2));
-dx = newunidist'-distp0;
+gaussFilter = exp(-(unidist'-distp0) .^ 2 / (2 * sigma ^ 2));
+dx = unidist'-distp0;
 gaussFilter(dx<-3*sigma|dx>3*sigma) = 0;
 gaussFilter = gaussFilter./sum (gaussFilter,2); % normalize
 % figure;plot(gaussFilter(12355,:))
@@ -73,7 +78,7 @@ end
 sumbuff1 = sum(sum(Sino3Dbuff(1:2:end,:,1)));
 sumbuff2 = sum(sum(Sino3Dbuff(2:2:end,:,1)));
 
-sino = zeros(nd,nd,na);
+sino = 0*Sino3Dbuff;
 for ii = 1:na
     for jj = 1:nd
         if(mod(ii,2)==1)
