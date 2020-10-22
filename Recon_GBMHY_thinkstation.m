@@ -1,71 +1,48 @@
-% clear
-% close all
-% clc
-% 
-% patientName = 'phantom_polygon_10cm_100m';
-% projectName = 'PairProd';
-% patFolder = fullfile('D:\datatest\PairProd\',patientName);
-% projectFolder = fullfile(patFolder,projectName);
-% dosecalcFolder = fullfile(patFolder,'dosecalc');
-% dosematrixFolder = fullfile(projectFolder,'dosematrix');
-% resultFolder = fullfile(projectFolder,'result');
-% mkdir(resultFolder)
-% 
-% load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'energy','sortedtime','sortInd','CoincidenceTime');
-% load(fullfile(dosematrixFolder,[patientName projectName '_M_HighRes.mat']),'M','M_Anni','dose_data','masks');
-% load(fullfile(dosematrixFolder,[patientName projectName '_dicomimg.mat']),'img','imgres');
-% 
-% paramsFolder = fullfile(projectFolder,'params');
-% ParamsNum = 0;
-% load(fullfile(paramsFolder,['params' num2str(ParamsNum) '.mat']),'params');
-% InfoNum = 0;
-% load(fullfile(paramsFolder,['StructureInfo' num2str(InfoNum) '.mat']),'StructureInfo');
-% 
-% hulist =  [-800,   -154,   -18,     197,      1000];  
-% %          lung  adipose   water   muscle     bone
-% maclist = [0.0095 0.0096  0.0096   0.0095    0.0089];
-% rholist = [0.3     0.92      1      1.05      1.6  ];
-% mulist = maclist.*rholist;
-% 
-% % x_CT = phantom(:,:,ceil(end/2));
-% % mumap = interp1(hulist,mulist,x_CT(:),'linear');
-% % mumap(x_CT>max(hulist)) = max(mulist);
-% % mumap(x_CT<min(hulist)) = min(mulist);
-% % mumap = reshape(mumap,size(x_CT));
-% 
-% x_CT = phantom(:,:,ceil(end/2));
-% mumap = 0*x_CT;
-% mumap(x_CT<-100) = 0.00129*0.0095;
-% mumap(x_CT==0) = 1.018*0.0096;
-% mumap(x_CT==1517) = 1.159*0.0089;
-% mumap(x_CT>1600) = 1.575*0.0089;
-% 
+clear
+close all
+clc
+
+patientName = 'GBMHY';
+projectName = 'PairProd';
+patFolder = fullfile('D:\datatest\PairProd\',patientName);
+projectFolder = fullfile(patFolder,projectName);
+dosecalcFolder = fullfile(patFolder,'dosecalc');
+dosematrixFolder = fullfile(projectFolder,'dosematrix');
+resultFolder = fullfile(projectFolder,'result');
+mkdir(resultFolder)
+
+load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'energy','sortedtime','sortInd','detectorIds','CorrectedTime');
+load(fullfile(dosematrixFolder,[patientName projectName '_M_HighRes.mat']),'M','M_Anni','dose_data','masks');
+load(fullfile(dosematrixFolder,[patientName projectName '_dicomimg.mat']),'img','imgres');
+
+paramsFolder = fullfile(projectFolder,'params');
+ParamsNum = 0;
+load(fullfile(paramsFolder,['params' num2str(ParamsNum) '.mat']),'params');
+InfoNum = 0;
+load(fullfile(paramsFolder,['StructureInfo' num2str(InfoNum) '.mat']),'StructureInfo');
+
+slicenum = 88;
+x_CT = img(:,:,end+1-slicenum)-1000;
+[mumap,densmap,Ind] = lookup_materials_bulk_density(x_CT);
+
 % figure;imshow(mumap,[])
+% figure;imshow(densmap,[])
+% figure;imshow(Ind,[])
 % figure;imshow(x_CT,[])
-% 
-% mumapold = mumap;
-% mumap = 0*mumap;
-% ind1 = 2; ind2 = 2;
-% mumap(1:end-ind1,ind2+1:end) = mumapold(ind1+1:end,1:end-ind2 );
-% 
-% % li = G * mumap;
-% % ci = exp(-li);
-% % img_fbp = em_fbp_QL(sg, ig, sino./ci);
-% % figure;imshow([img_fbp_gtsino/max(img_fbp_gtsino(:)) img_fbp/max(img_fbp(:))],[])
-% 
-% %% Identify LOR
-% EnergyResolution = 0.1;
-% CoincidenceTime = 2;  % ns 
-% 
-% Ind_coin_511 = IdentifyLOR_511(energy, sortedtime, sortInd, CoincidenceTime);
-% Ind_coin_accept = IdentifyLOR(energy, sortedtime, sortInd, CoincidenceTime, EnergyResolution);
-% 
-% TruePositive = length(Ind_coin_511)/length(Ind_coin_accept);
+
+%% Identify LOR
+EnergyResolution = 0.1;
+CoincidenceTime = 3;  % ns 
+
+Ind_coin_511 = IdentifyLOR_511(energy, sortedtime, sortInd, CoincidenceTime);
+Ind_coin_accept = IdentifyLOR(energy, sortedtime, sortInd, CoincidenceTime, EnergyResolution);
+
+TruePositive = length(Ind_coin_511)/length(Ind_coin_accept);
 % save(fullfile(dosematrixFolder,[patientName projectName '_detid_pair.mat']),'Ind_coin_511','Ind_coin_accept');
 
 %% Image Reconstruction
 R1 = 1200;
-distrange = 500;
+distrange = 300;
 imgsize = size(img);
 nb_cryst = max(detectorIds);
 
@@ -74,6 +51,36 @@ detid_pair = detectorIds(Ind_coin_accept);
 
 ig = image_geom('nx', size(img,1), 'ny', size(img,2), 'fov', size(img,1)*imgres);
 sg = sino_geom('par', 'nb', size(sino,1), 'na', size(sino,2), 'dr', dr);
+img_fbp_nocorrect = em_fbp_QL(sg, ig, sino);
+
+
+
+Anni3D = reshape(full(sum(M_Anni,2)),size(masks{1}.mask));
+Anni2D = Anni3D(:,:,slicenum);
+
+
+Anni2D = Anni3D(:,:,slicenum);
+Anni2Dold = Anni2D;
+Anni2D = 0*Anni2D;
+ind1 = 20; ind2 = 20;
+Anni2D(ind1+1:end,ind2+1:end) = Anni2Dold(1:end-ind1,1:end-ind2 );
+% Anni2D(1:end+ind1,ind2+1:end) = Anni2Dold(-ind1+1:end,1:end-ind2 );
+% figure;imshow([Anni2D/max(Anni2D(:)),img_fbp_nocorrect/max(img_fbp_nocorrect(:))],[])
+C = imfuse(Anni2D/max(Anni2D(:)),img_fbp_nocorrect/max(img_fbp_nocorrect(:)),'falsecolor','Scaling','joint','ColorChannels',[1 2 0]);
+imshow(C)
+% li = G * mumap;
+% ci = exp(-li);
+% img_fbp = em_fbp_QL(sg, ig, sino./ci);
+% figure;imshow([img_fbp_gtsino/max(img_fbp_gtsino(:)) img_fbp/max(img_fbp(:))],[])
+
+mumapold = mumap;
+mumap = 0*mumap;
+mumap(ind1+1:end,ind2+1:end) = mumapold(1:end-ind1,1:end-ind2 );
+% mumap(1:end-ind1,ind2+1:end) = mumapold(ind1+1:end,1:end-ind2 );
+figure;imshow(mumap,[])
+
+
+
 G = Gtomo2_strip(sg, ig);
 % ci = GetACfactor_sino(G, mumap);
 li = G * mumap;
@@ -94,9 +101,6 @@ mu = 1e-05;
 % proj = (G * img_fbp) .* ci;
 % figure;imshow([proj; Sino],[])
 
-Anni3D = reshape(full(sum(M_Anni,2)),size(masks{1}.mask));
-Anni2D = Anni3D(:,:,ceil(end/2));
-% figure;imshow([Anni2D/max(Anni2D(:)) img_fbp/max(img_fbp(:))],[])
 
 sino_FP = reshape(ForBack.applyFP(Anni2D),size(sino));
 img_fbp_gtsino = em_fbp_QL(sg, ig, sino_FP);
@@ -104,10 +108,13 @@ figure;imshow(sino_FP,[])
 sino_correct = sino./ci;
 
 test = sino_correct/sum(sino_correct(:))-sino_FP/sum(sino_FP(:));
-figure;imshow([test/sum(abs(test(:)); sino_correct/sum(sino_correct(:)); sino_FP/sum(sino_FP(:))],[])
+figure;imshow([test/sum(abs(test(:))); sino_correct/sum(sino_correct(:)); sino_FP/sum(sino_FP(:))],[])
+figure;imshow([sino_correct/sum(sino_correct(:)); sino_FP/sum(sino_FP(:))],[])
 figure;imshow([sinobuff/sum(sinobuff(:)); sino/sum(sino(:)); sino_FP/sum(sino_FP(:))],[])
-figure;imshow([img_fbp_gtsino/max(img_fbp_gtsino(:)) img_fbp/max(img_fbp(:))],[])
+figure;imshow([img_fbp_gtsino/max(img_fbp_gtsino(:)) img_fbp/max(img_fbp(:)) img_fbp_nocorrect/max(img_fbp_nocorrect(:))],[])
 figure;imshow([sino_correct/sum(sino_correct(:))-sino_FP/sum(sino_FP(:))],[])
+figure;imshow([img_fbp_nocorrect/max(img_fbp_nocorrect(:))],[])
+figure;imshow([img_fbp/max(img_fbp(:))],[])
 
 figure;imshow([img_fbp_gtsino/max(img_fbp_gtsino(:))-img_fbp_nocorrect/max(img_fbp_nocorrect(:))],[])
 
@@ -124,6 +131,7 @@ img_direct2 = recon_TOF_direct(reconparams, detid_pair, deltat, cilist./cilist);
 figure;imshow(img_ci/max(img_ci(:)),[0,0.005])
 % figure;imshow([Anni2D/max(Anni2D(:)) img_direct/max(img_direct(:)) img_fbp/max(img_fbp(:)) ],[])
  figure;imshow([[Anni2D/max(Anni2D(:)) img_fbp/max(img_fbp(:))]; [img_direct/max(img_direct(:)) x_TV/max(x_TV(:))]],[])
+ figure;imshow([Anni2D/max(Anni2D(:)) img_fbp_nocorrect/max(img_fbp_nocorrect(:)) img_direct2/max(img_direct2(:))],[])
 
 %% TOF reconstruction
 count = 1;
