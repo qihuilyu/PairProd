@@ -22,7 +22,7 @@ figure;imshow3D(dose)
 figure;imshow3D(Anni3D)
 
 pdose = 25;
-[StructureInfo, params] = InitIMRTparams_DLMCforRyan(M,dose_data,masks,pdose,[1,2,3]);
+[StructureInfo, params] = InitIMRTparams_DLMCforRyan(M,dose_data,masks,pdose,[1,2,0]);
 
 projectFolder = fullfile(patFolder,'PairProd');
 paramsFolder = fullfile(projectFolder,'params');
