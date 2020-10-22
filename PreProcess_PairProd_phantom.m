@@ -2,7 +2,7 @@ clear
 close all
 clc
 
-patientName = 'phantom_polygon_10cm_100m';
+patientName = 'GBMHY';
 projectName = 'PairProd';
 patFolder = fullfile('/media/raid1/qlyu/PairProd/datatest',patientName);
 dosecalcFolder = fullfile(patFolder,'dosecalc');
@@ -45,7 +45,7 @@ baseFileNames = dir([DicomPath '/*.dcm']);
 img = [];
 for ii = 1:numel(sortedFile)
     dcinfo = dicominfo(fullfile(DicomPath,sortedFile{ii}));
-    if(~strcmp(dcinfo.Modality,'RTstruct'))
+    if(~strcmpi(dcinfo.Modality,'RTstruct'))
         imgres = dcinfo.SliceThickness;
         img(:,:,ii) = dicomread(fullfile(DicomPath,sortedFile{ii}));
     end
