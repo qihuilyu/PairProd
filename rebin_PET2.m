@@ -1,8 +1,16 @@
-function [sino, inter, newunidist, Sinobuff, unidist] = rebin_PET2(detid_pair, numdet, R1, distrange)
+function [sino, inter, newunidist, Sinobuff, unidist] = rebin_PET2(detid_pair, numdet, R1, distrange, varargin)
 
-[uniang, indang, unidist, inddist, ~] = list2sino(detid_pair, numdet, R1, distrange);
+[uniang, indang, unidist, inddist, gooddetind] = list2sino(detid_pair, numdet, R1, distrange);
 
-Sinobuff = full(sparse(inddist,indang,1));
+if(isempty(varargin))
+    optimizedweights = 1;
+else
+    optimizedweights = varargin{1};
+    optimizedweights = optimizedweights(gooddetind);
+end
+
+
+Sinobuff = full(sparse(inddist,indang,optimizedweights));
 disp(['Number of detected LORs: ' num2str(sum(Sinobuff(:)))])
 
 inter = max(abs(diff(unidist)));
