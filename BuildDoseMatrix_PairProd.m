@@ -3,13 +3,13 @@ function [M,M_Anni,dose_data,masks]=BuildDoseMatrix_PairProd(h5file, maskfile, f
 verbose = 2;
 PTVind = 1;
 
-[ masks ] = open_masks2( maskfile, 'xyz', verbose );
+[ masks ] = open_masks( maskfile, 'xyz', verbose );
 PTV = masks{PTVind}.mask;
 sz = size(PTV);
 
 for i = 1:length(masks)
     masks{i}.mask = permute(masks{i}.mask,[2,1,3]);
-    masks{i}.name = masks{i}.name{1};
+    masks{i}.name = masks{i}.name;
 end
 
 M = read_sparse_mcdose(h5file);

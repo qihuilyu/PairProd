@@ -105,7 +105,7 @@ energy(badID,:) = [];
 eventIds(badID,:) = [];
 globalTimes(badID,:) = [];
 Mega(badID,:) = [];
-% save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','-v7.3');
+save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','-v7.3');
 
 %% Reject detectors associated with primary beam; select photons based on energy resolution
 
@@ -133,12 +133,14 @@ ylabel('Detected photon counts')
 title('Detected photon counts within 10% energy resolution')
 set(gca,'FontSize',20)
 
+
+
 thresh = median(beamdet_accept(ii,:))*5;
 beamNo_detectorIDs_rej = find(beamdet_accept>thresh);
 beamNo_detectorIDs = (detectorIds-1)*size(beamdet_accept,1) + beamNo;
 badID = ismember(beamNo_detectorIDs,beamNo_detectorIDs_rej);
 badIDmask = zeros(size(beamNo_detectorIDs));
-badIDmask(badID) = 1;
+badIDmask(badID)
 
 newbeamdet_accept = full(sparse(beamNo(badIDmask==0),detectorIds(badIDmask==0),1));
 figure; set(gcf,'pos',[2715   148    1480    1001])
@@ -160,7 +162,6 @@ energy(badID,:) = [];
 eventIds(badID,:) = [];
 globalTimes(badID,:) = [];
 Mega(badID,:) = [];
-save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','-v7.3');
 
 
 %% fluence map segments
