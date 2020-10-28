@@ -84,6 +84,7 @@ badIDbuff1 = Ind_coin1(mask_sameenergy & timediff>0);
 badIDbuff2 = Ind_coin2(mask_sameenergy & timediff<0);
 badID1 = union(badIDbuff1,badIDbuff2);
 
+% boundary issue(det id: 1 and 1440)
 AlldetectorID2 = (AlleventID-1)*nb_cryst + mod(detectorIds,nb_cryst);
 [sortedAlldetectorID2, sortAlldetectorIDInd2] = sort(AlldetectorID2);
 sortInd_sameparticle2 = find(diff(sortedAlldetectorID2)==1);
