@@ -21,6 +21,12 @@ figure;plot(huq,densq)
 
 matdens = [0.0,0.207,0.481,0.919,0.979,1.004,1.109,1.113,1.496,1.654];
 mathu   = [-1024,-800,-522,-150,-58,0,198,209,1140,1518];
+% matdenslist = [0.0,0.207,0.481,0.919,0.979,1.004,1.109,1.113,1.496,1.654,6.0,6.1,6.2,6.3,6.4,6.5,6.6];
+% matdenslist = [6.0,6.1,6.2,6.3,6.4,6.5,6.6];
+% for ii = 1:numel(matdenslist)
+%     [~,ind] = min((matdenslist(ii)-densq).^2);
+%     mathulist(ii) = huq(ind);
+% end
 
 r = 35; ninserts = numel(matdens); ri = 5;
 for ii = 1:ninserts

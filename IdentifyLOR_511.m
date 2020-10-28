@@ -1,24 +1,28 @@
-function Ind_coin = IdentifyLOR_511(energy, sortedtime, sortInd, CoincidenceTime)
+function Ind_coin = IdentifyLOR_511(energy, CorrectedTime, CoincidenceTime)
 
 Ind_511 = find(abs(energy-0.511)<0.0001);
+indmap = 1:numel(CorrectedTime);
+indmap = indmap(Ind_511);
+CorrectedTime_511 = CorrectedTime(Ind_511);
 
-difftime = diff(sortedtime);
+[sortedtime_511, sortInd_511] = sort(CorrectedTime_511);
+
+
+difftime = diff(sortedtime_511);
 difftime2 = difftime(1:end-1) + difftime(2:end);
-sortInd_coin = find(difftime<CoincidenceTime);
-sortInd_coin2 = find(difftime2<CoincidenceTime);
-sortInd_multiplecoin = union(union(sortInd_coin2,sortInd_coin2+1),sortInd_coin2+2);
-sortInd_coin_cleaned = setdiff(sortInd_coin,sortInd_multiplecoin);
+newsortInd_coin = find(difftime<CoincidenceTime);
+newsortInd_coin2 = find(difftime2<CoincidenceTime);
+newsortInd_multiplecoin = union(union(newsortInd_coin2,newsortInd_coin2+1),newsortInd_coin2+2);
+newsortInd_coin_cleaned = setdiff(newsortInd_coin,newsortInd_multiplecoin);
 
-Ind_coin1 = sortInd(sortInd_coin_cleaned);
-Ind_coin2 = sortInd(sortInd_coin_cleaned+1);
+sortInd_coin1 = sortInd_511(newsortInd_coin_cleaned);
+sortInd_coin2 = sortInd_511(newsortInd_coin_cleaned+1);
 
-[~, iInd_coin1, ~] = intersect(Ind_coin1, Ind_511);
-[~, iInd_coin2, ~] = intersect(Ind_coin2, Ind_511);
+Ind_coin1 = indmap(sortInd_coin1);
+Ind_coin2 = indmap(sortInd_coin2);
 
-iInd_coin = intersect(iInd_coin1,iInd_coin2);
-Ind_coin1_511 = Ind_coin1(iInd_coin);
-Ind_coin2_511 = Ind_coin2(iInd_coin);
+Ind_coin = [Ind_coin1 Ind_coin2];
 
-Ind_coin = [Ind_coin1_511 Ind_coin2_511];
-
+% test2 = [Mega(Ind_coin1,:) Mega(Ind_coin2,:) Mega(Ind_coin2,1)-Mega(Ind_coin1,1)];
+% test3 = [Mega(indmap(sortInd_511),:)];
 

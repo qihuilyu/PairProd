@@ -2,7 +2,7 @@ clear
 close all
 clc
 
-patientName = 'GBMHY';
+patientName = 'GBMHY_10MV';
 projectName = 'PairProd';
 patFolder = fullfile('D:\datatest\PairProd\',patientName);
 projectFolder = fullfile(patFolder,projectName);
@@ -11,7 +11,8 @@ dosematrixFolder = fullfile(projectFolder,'dosematrix');
 resultFolder = fullfile(projectFolder,'result');
 mkdir(resultFolder)
 
-load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'energy','sortedtime','sortInd','detectorIds','CorrectedTime');
+load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']));
+% load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'energy','sortedtime','sortInd','detectorIds','CorrectedTime');
 load(fullfile(dosematrixFolder,[patientName projectName '_M_HighRes.mat']),'M','M_Anni','dose_data','masks');
 load(fullfile(dosematrixFolder,[patientName projectName '_dicomimg.mat']),'img','imgres');
 
@@ -32,10 +33,10 @@ x_CT = img(:,:,end+1-slicenum)-1000;
 
 %% Identify LOR
 EnergyResolution = 0.1;
-CoincidenceTime = 3;  % ns 
+CoincidenceTime = 2;  % ns 
 
-Ind_coin_511 = IdentifyLOR_511(energy, sortedtime, sortInd, CoincidenceTime);
-Ind_coin_accept = IdentifyLOR(energy, sortedtime, sortInd, CoincidenceTime, EnergyResolution);
+Ind_coin_511 = IdentifyLOR_511(energy, CorrectedTime, CoincidenceTime);
+Ind_coin_accept = IdentifyLOR(energy, CorrectedTime, CoincidenceTime, EnergyResolution);
 
 TruePositive = length(Ind_coin_511)/length(Ind_coin_accept);
 % save(fullfile(dosematrixFolder,[patientName projectName '_detid_pair.mat']),'Ind_coin_511','Ind_coin_accept');

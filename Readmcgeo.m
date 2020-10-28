@@ -1,5 +1,5 @@
 
-filename = 'D:\datatest\PairProd\phantom_10cm\mcgeo.txt';
+filename = 'C:\Users\admin\Desktop\mcgeo.txt';
 A = readmatrix(filename);
 
 
