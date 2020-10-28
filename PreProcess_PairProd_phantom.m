@@ -2,7 +2,7 @@ clear
 close all
 clc
 
-patientName = 'GBMHY';
+patientName = 'GBMHY_10MV';
 projectName = 'PairProd';
 patFolder = fullfile('/media/raid1/qlyu/PairProd/datatest',patientName);
 dosecalcFolder = fullfile(patFolder,'dosecalc');
