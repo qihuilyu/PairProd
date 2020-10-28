@@ -1,7 +1,5 @@
 function [uniang, indang, unidist, inddist, gooddetind] = list2sino(detid_pair, numdet, R1, distrange)
 
-
-
 theta = detid_pair/numdet*2*pi;
 x_ = R1*sin(theta);
 y_ = R1*cos(theta);

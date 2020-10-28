@@ -2,7 +2,7 @@ clear
 close all
 clc
 
-patientName = 'GBMHY';
+patientName = 'newphantom_1m_newraytrace';
 projectName = 'PairProd';
 patFolder = fullfile('D:\datatest\PairProd\',patientName);
 projectFolder = fullfile(patFolder,projectName);
@@ -21,7 +21,8 @@ load(fullfile(paramsFolder,['params' num2str(ParamsNum) '.mat']),'params');
 InfoNum = 0;
 load(fullfile(paramsFolder,['StructureInfo' num2str(InfoNum) '.mat']),'StructureInfo');
 
-slicenum = 88;
+% slicenum = 88;
+slicenum = 50;
 x_CT = img(:,:,end+1-slicenum)-1000;
 [mumap,densmap,Ind] = lookup_materials_bulk_density(x_CT);
 
@@ -32,7 +33,7 @@ x_CT = img(:,:,end+1-slicenum)-1000;
 
 %% Identify LOR
 EnergyResolution = 0.1;
-CoincidenceTime = 3;  % ns 
+CoincidenceTime = 2;  % ns 
 
 Ind_coin_511 = IdentifyLOR_511(energy, sortedtime, sortInd, CoincidenceTime);
 Ind_coin_accept = IdentifyLOR(energy, sortedtime, sortInd, CoincidenceTime, EnergyResolution);
@@ -54,9 +55,9 @@ sg = sino_geom('par', 'nb', size(sino,1), 'na', size(sino,2), 'dr', dr);
 img_fbp_nocorrect = em_fbp_QL(sg, ig, sino);
 
 
-
 Anni3D = reshape(full(sum(M_Anni,2)),size(masks{1}.mask));
 Anni2D = Anni3D(:,:,slicenum);
+figure;imshow(Anni2D,[])
 
 dose3D = reshape(full(sum(M,2)),size(masks{1}.mask));
 dose2D = dose3D(:,:,slicenum);

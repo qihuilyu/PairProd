@@ -2,7 +2,7 @@ clear
 close all
 clc
 
-patientName = 'phantom_10cm';
+patientName = 'newphantom_10k_newraytrace';
 projectName = 'PairProd';
 patFolder = fullfile('D:\datatest\PairProd\',patientName);
 dosecalcFolder = fullfile(patFolder,'dosecalc');
