@@ -2,7 +2,7 @@ clear
 close all
 clc
 
-patientName = 'phantom_tumorwithAuCa_1m_10MV';
+patientName = 'GBMHY_10MV';
 projectName = 'PairProd';
 patFolder = fullfile('D:\datatest\PairProd\',patientName);
 projectFolder = fullfile(patFolder,projectName);
@@ -11,7 +11,7 @@ dosematrixFolder = fullfile(projectFolder,'dosematrix');
 resultFolder = fullfile(projectFolder,'result');
 mkdir(resultFolder)
 
-load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'energy','detectorIds','CorrectedTime','eventIds');
+load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'energy','detectorIds','CorrectedTime');
 load(fullfile(dosematrixFolder,[patientName projectName '_M_HighRes.mat']),'M','M_Anni','dose_data','masks');
 load(fullfile(dosematrixFolder,[patientName projectName '_dicomimg.mat']),'img','imgres');
 
@@ -21,7 +21,7 @@ load(fullfile(paramsFolder,['params' num2str(ParamsNum) '.mat']),'params');
 InfoNum = 0;
 load(fullfile(paramsFolder,['StructureInfo' num2str(InfoNum) '.mat']),'StructureInfo');
 
-slicenum = 50;
+slicenum = 88;
 x_CT = img(:,:,end+1-slicenum)-1000;
 [mumap,densmap,Ind] = lookup_materials_bulk_density(x_CT);
 
@@ -52,7 +52,6 @@ detid_pair = detectorIds(Ind_coin_accept);
 ig = image_geom('nx', size(img,1), 'ny', size(img,2), 'fov', size(img,1)*imgres);
 sg = sino_geom('par', 'nb', size(sino,1), 'na', size(sino,2), 'dr', dr);
 img_fbp_nocorrect = em_fbp_QL(sg, ig, sino);
-figure;imshow(img_fbp_nocorrect,[])
 
 Anni3D = reshape(full(sum(M_Anni,2)),size(masks{1}.mask));
 Anni2D = Anni3D(:,:,slicenum);
