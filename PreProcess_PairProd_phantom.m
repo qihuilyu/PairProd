@@ -2,7 +2,7 @@ clear
 close all
 clc
 
-patientName = 'phantom_tumorwithAuCa_10m_10MV';
+patientName = 'phantom_tumorwithAuCa_1m_10MV';
 projectName = 'PairProd';
 patFolder = fullfile('/media/raid1/qlyu/PairProd/datatest',patientName);
 dosecalcFolder = fullfile(patFolder,'dosecalc');
@@ -199,7 +199,7 @@ deltatime_beam = beamtime*(1:numbeams)'; % 1 ms
 CorrectedTime = globalTimes + cumsum_eventtime_batch(event_perbatch_beamletIDs)...
         + event_batchID*batchtime + beamNo*beamtime;
 [sortedtime, sortInd] = sort(CorrectedTime);
-save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'CorrectedTime','sortedtime','sortInd','-append');
+save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'CorrectedTime','sortedtime','sortInd','numevent','-append');
 
 % %% Identify LOR
 % Ind_511 = find(abs(energy-0.511)<0.0001);
