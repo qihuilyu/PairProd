@@ -2,7 +2,7 @@ clear
 close all
 clc
 
-patientName = 'newphantom_1m_newraytrace';
+patientName = 'phantom_tumorwithAuCa_10m_10MV';
 projectName = 'PairProd';
 patFolder = fullfile('/media/raid1/qlyu/PairProd/datatest',patientName);
 dosecalcFolder = fullfile(patFolder,'dosecalc');
@@ -124,11 +124,11 @@ Mega = Mega(Ind_accept,:);
 
 beamdet_accept = full(sparse(beamNo,detectorIds,1));
 figure; set(gcf,'pos',[2715   148    1480    1001])
-for ii = 1:4:size(beamdet_accept,1)
+for ii = 1:2:size(beamdet_accept,1)
     plot(beamdet_accept(ii,:),'LineWidth',2); hold on
 end
-legend({'beam 1','beam 5','beam 9','beam 13','beam 17'})
-% legend({'beam 1','beam 3','beam 5','beam 7'})
+% legend({'beam 1','beam 5','beam 9','beam 13','beam 17'})
+legend({'beam 1','beam 3','beam 5','beam 7'})
 xlabel('Detector ID')
 ylabel('Detected photon counts')
 title('Detected photon counts within 10% energy resolution')
