@@ -21,7 +21,7 @@ sortInd_coin2 = sortInd_511(newsortInd_coin_cleaned+1);
 Ind_coin1 = indmap(sortInd_coin1);
 Ind_coin2 = indmap(sortInd_coin2);
 
-Ind_coin = [Ind_coin1 Ind_coin2];
+Ind_coin = [Ind_coin1(:) Ind_coin2(:)];
 
 % test2 = [Mega(Ind_coin1,:) Mega(Ind_coin2,:) Mega(Ind_coin2,1)-Mega(Ind_coin1,1)];
 % test3 = [Mega(indmap(sortInd_511),:)];

@@ -35,8 +35,8 @@ x_CT = img(:,:,end+1-slicenum)-1000;
 EnergyResolution = 0.1;
 CoincidenceTime = 2;  % ns 
 
-Ind_coin_511 = IdentifyLOR_511(energy, sortedtime, sortInd, CoincidenceTime);
-Ind_coin_accept = IdentifyLOR(energy, sortedtime, sortInd, CoincidenceTime, EnergyResolution);
+Ind_coin_511 = IdentifyLOR_511(energy, CorrectedTime, CoincidenceTime);
+Ind_coin_accept = IdentifyLOR(energy, CorrectedTime, CoincidenceTime, EnergyResolution);
 
 TruePositive = length(Ind_coin_511)/length(Ind_coin_accept);
 % save(fullfile(dosematrixFolder,[patientName projectName '_detid_pair.mat']),'Ind_coin_511','Ind_coin_accept');
