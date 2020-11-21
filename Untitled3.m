@@ -27,3 +27,6 @@ B = groupcounts(detid_pair(ceil(rand(1000000,1)*numel(detid_pair(:)))));
 figure; plot(B)
 
 
+
+
+

@@ -2,7 +2,7 @@ clear
 close all
 clc
 
-patientName = 'phantom_tumorwithAuCa_1m_10MV';
+patientName = 'phantom_nanoparticles_50m';
 projectName = 'PairProd';
 patFolder = fullfile('D:\datatest\PairProd\',patientName);
 projectFolder = fullfile(patFolder,projectName);

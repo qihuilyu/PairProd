@@ -1,5 +1,4 @@
-
-filename = '/media/raid1/qlyu/PairProd/dbdata/mcgeometry/5f9a56e8f415784a8a010acf/mcgeo.txt';
+filename = '/media/raid1/qlyu/PairProd/dbdata/mcgeometry/5fb7753677cf178057e89765/mcgeo.txt';
 A = readmatrix(filename);
 
 % density = reshape(A(:,1),[105,125,65]);
