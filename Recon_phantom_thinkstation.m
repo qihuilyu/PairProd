@@ -2,7 +2,8 @@ clear
 close all
 clc
 
-patientName = 'phantom_tumorwithAuCa_1m_10MV';
+% patientName = 'phantom_10MV_60beams_10m';
+patientName = 'phantom_LimitedROI_50m';
 projectName = 'PairProd';
 patFolder = fullfile('D:\datatest\PairProd\',patientName);
 projectFolder = fullfile(patFolder,projectName);
@@ -62,7 +63,7 @@ dose3D = reshape(full(sum(M,2)),size(masks{1}.mask));
 dose2D = dose3D(:,:,slicenum);
 figure;imshow(dose2D,[])
 
-ind1 = 20; ind2 = 20;
+ind1 = 1; ind2 = 0;
 Anni2D = Anni3D(:,:,slicenum);
 Anni2Dold = Anni2D;
 Anni2D = 0*Anni2D;

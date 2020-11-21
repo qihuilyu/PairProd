@@ -4,7 +4,7 @@
 % g = gpuDevice(1)
 % reset(g)
 
-patientName = 'GBMHY_10MV';
+patientName = 'GBMHY_100m';
 folder = 'D:\datatest\PairProd\';
 patFolder = fullfile(folder, patientName);
 bz2Folder = fullfile(patFolder,'CERR_bz2');

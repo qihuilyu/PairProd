@@ -2,13 +2,13 @@ clear
 close all
 clc
 
-patientName = 'GBMHY';
+patientName = 'GBMHY_100m';
 projectName = 'PairProd';
 patFolder = fullfile('D:\datatest\PairProd\',patientName);
 projectFolder = fullfile(patFolder,projectName);
 dosecalcFolder = fullfile(patFolder,'dosecalc');
 dosematrixFolder = fullfile(projectFolder,'dosematrix');
-resultFolder = fullfile(projectFolder,'result');
+resultFolder = fullfile(projectFolder,'results');
 mkdir(resultFolder)
 
 load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'energy','detectorIds','CorrectedTime','eventIds');
@@ -32,7 +32,7 @@ x_CT = img(:,:,end+1-slicenum)-1000;
 
 %% Identify LOR
 EnergyResolution = 0.1;
-CoincidenceTime = 2;  % ns 
+CoincidenceTime = 1;  % ns 
 
 Ind_coin_511 = IdentifyLOR_511(energy, CorrectedTime, CoincidenceTime);
 Ind_coin_accept = IdentifyLOR(energy, CorrectedTime, CoincidenceTime, EnergyResolution);
@@ -52,7 +52,6 @@ detid_pair = detectorIds(Ind_coin_accept);
 ig = image_geom('nx', size(img,1), 'ny', size(img,2), 'fov', size(img,1)*imgres);
 sg = sino_geom('par', 'nb', size(sino,1), 'na', size(sino,2), 'dr', dr);
 img_fbp_nocorrect = em_fbp_QL(sg, ig, sino);
-figure;imshow(img_fbp_nocorrect,[])
 
 Anni3D = reshape(full(sum(M_Anni,2)),size(masks{1}.mask));
 Anni2D = Anni3D(:,:,slicenum);
