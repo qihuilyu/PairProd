@@ -2,8 +2,7 @@ clear
 close all
 clc
 
-% patientName = 'phantom_10MV_60beams_10m';
-patientName = 'phantom_LimitedROI_50m';
+patientName = 'phantom_nanoparticles_50m';
 projectName = 'PairProd';
 patFolder = fullfile('D:\datatest\PairProd\',patientName);
 projectFolder = fullfile(patFolder,projectName);

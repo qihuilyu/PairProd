@@ -2,7 +2,13 @@ clear
 close all
 clc
 
-patientName = 'phantom_tumorwithAuCa_10m_10MV';
+t = tic;
+while toc(t)<7200*3
+    pause(2)
+end
+!('/media/raid1/qlyu/PairProd/datatest/collect_doescalc_pairprod.sh')
+
+patientName = 'phantom_nanoparticles_LimitedROI_run2';
 projectName = 'PairProd';
 patFolder = fullfile('/media/raid1/qlyu/PairProd/datatest',patientName);
 dosecalcFolder = fullfile(patFolder,'dosecalc');
@@ -84,19 +90,22 @@ badIDbuff1 = Ind_coin1(mask_sameenergy & timediff>0);
 badIDbuff2 = Ind_coin2(mask_sameenergy & timediff<0);
 badID1 = union(badIDbuff1,badIDbuff2);
 
+clearvars Ind_coin1 Ind_coin2 mask_sameenergy sortInd_sameparticle sortAlldetectorIDInd sortedAlldetectorID timediff badIDbuff1 badIDbuff2
+
 % boundary issue(det id: 1 and 1440)
 AlldetectorID2 = (AlleventID-1)*nb_cryst + mod(detectorIds,nb_cryst);
-[sortedAlldetectorID2, sortAlldetectorIDInd2] = sort(AlldetectorID2);
-sortInd_sameparticle2 = find(diff(sortedAlldetectorID2)==1);
-Ind_coin21 = sortAlldetectorIDInd2(sortInd_sameparticle2);
-Ind_coin22 = sortAlldetectorIDInd2(sortInd_sameparticle2+1);
-mask_sameenergy = (energy(Ind_coin21)-energy(Ind_coin22)==0);
-timediff = globalTimes(Ind_coin21)-globalTimes(Ind_coin22);
-badIDbuff1 = Ind_coin21(mask_sameenergy & timediff>0);
-badIDbuff2 = Ind_coin22(mask_sameenergy & timediff<0);
+[sortedAlldetectorID, sortAlldetectorIDInd] = sort(AlldetectorID2);
+sortInd_sameparticle = find(diff(sortedAlldetectorID)==1);
+Ind_coin1 = sortAlldetectorIDInd(sortInd_sameparticle);
+Ind_coin2 = sortAlldetectorIDInd(sortInd_sameparticle+1);
+mask_sameenergy = (energy(Ind_coin1)-energy(Ind_coin2)==0);
+timediff = globalTimes(Ind_coin1)-globalTimes(Ind_coin2);
+badIDbuff1 = Ind_coin1(mask_sameenergy & timediff>0);
+badIDbuff2 = Ind_coin2(mask_sameenergy & timediff<0);
 badID2 = union(badIDbuff1,badIDbuff2);
 
 badID = union(badID1,badID2);
+clearvars Ind_coin1 Ind_coin2 mask_sameenergy sortInd_sameparticle sortAlldetectorIDInd sortedAlldetectorID timediff badIDbuff1 badIDbuff2 badID1 badID2
 
 beamletIDs(badID,:) = [];
 detectorIds(badID,:) = [];
@@ -199,7 +208,7 @@ deltatime_beam = beamtime*(1:numbeams)'; % 1 ms
 CorrectedTime = globalTimes + cumsum_eventtime_batch(event_perbatch_beamletIDs)...
         + event_batchID*batchtime + beamNo*beamtime;
 [sortedtime, sortInd] = sort(CorrectedTime);
-save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'CorrectedTime','sortedtime','sortInd','-append');
+save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'CorrectedTime','sortedtime','sortInd','numevent','-append');
 
 % %% Identify LOR
 % Ind_511 = find(abs(energy-0.511)<0.0001);
