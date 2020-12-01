@@ -4,7 +4,7 @@
 % g = gpuDevice(1)
 % reset(g)
 
-patientName = 'GBMHY_100m';
+patientName = 'GBMHY_final_100m';
 folder = 'D:\datatest\PairProd\';
 patFolder = fullfile(folder, patientName);
 bz2Folder = fullfile(patFolder,'CERR_bz2');
@@ -114,5 +114,13 @@ save(fullfile(resultsFolder,[planName ' result.mat']),'result')
 for ii = 1:length(StructureInfo)
     StructureInfo(ii).meandose = mean(dose(StructureInfo(ii).Mask==1));
 end
+
+xPolish = result.xPolish;
+ds = 25/2*10; nruns = 10; thresh = 1;
+% xPolish(xPolish<thresh*ds) = thresh*ds;
+fileID = fopen(fullfile(patFolder, 'dosecalc', [patientName '_nruns_' num2str(nruns) '.txt']),'w');
+fprintf(fileID,'%d \n',ceil(xPolish/ds/nruns));
+fclose(fileID);
+
 
 
