@@ -142,6 +142,7 @@ xlabel('Detector ID')
 ylabel('Detected photon counts')
 title('Detected photon counts within 10% energy resolution')
 set(gca,'FontSize',20)
+saveas(gcf,fullfile(dosematrixFolder,['Original_counts.png']))
 
 thresh = median(beamdet_accept(ii,:))*5;
 beamNo_detectorIDs_rej = find(beamdet_accept>thresh);
@@ -161,6 +162,7 @@ xlabel('Detector ID')
 ylabel('Detected photon counts')
 title('Detected photon counts within 10% energy resolution')
 set(gca,'FontSize',20)
+saveas(gcf,fullfile(dosematrixFolder,['Processed_counts.png']))
 
 beamletIDs(badID,:) = [];
 detectorIds(badID,:) = [];
@@ -208,138 +210,3 @@ CorrectedTime = globalTimes + cumsum_eventtime_batch(event_perbatch_beamletIDs).
         + event_batchID*batchtime + beamNo*beamtime;
 [sortedtime, sortInd] = sort(CorrectedTime);
 save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'CorrectedTime','sortedtime','sortInd','numevent','eventrate','-append');
-
-% %% Identify LOR
-% Ind_511 = find(abs(energy-0.511)<0.0001);
-% EnergyResolution = 0.1;
-% Ind_accept = find(abs(energy-0.511)<0.511*EnergyResolution);
-% 
-% CoincidenceTime = 2;  % ns  
-% % [sortedtime, sortInd] = sort(CorrectedTime);
-% sortInd_coin = find(diff(sortedtime)<CoincidenceTime);
-% Ind_coin1 = sortInd(sortInd_coin);
-% Ind_coin2 = sortInd(sortInd_coin+1);
-% 
-% [Ind_coin1_511buff, iInd_coin1, iInd_511_1] = intersect(Ind_coin1, Ind_511);
-% [Ind_coin2_511buff, iInd_coin2, iInd_511_2] = intersect(Ind_coin2, Ind_511);
-% 
-% iInd_coin = intersect(iInd_coin1,iInd_coin2);
-% Ind_coin1_511 = Ind_coin1(iInd_coin);
-% Ind_coin2_511 = Ind_coin2(iInd_coin);
-% 
-% [Ind_coin1_acceptbuff, iInd_coin1, iInd_accept_1] = intersect(Ind_coin1, Ind_accept);
-% [Ind_coin2_acceptbuff, iInd_coin2, iInd_accept_2] = intersect(Ind_coin2, Ind_accept);
-% 
-% iInd_coin = intersect(iInd_coin1,iInd_coin2);
-% Ind_coin1_accept = Ind_coin1(iInd_coin);
-% Ind_coin2_accept = Ind_coin2(iInd_coin);
-% 
-% TruePositive = length(Ind_coin1_511)/length(Ind_coin1_accept);
-% 
-% %% Image Reconstruction
-% R1 = 120;
-% distrange = 30;
-% 
-% detid_pair = [detectorIds(Ind_coin1_accept) detectorIds(Ind_coin2_accept)];
-% Sino = rebin_PET(detid_pair, nb_cryst, R1, distrange);
-% figure;imshow(Sino,[])
-% 
-% ig = image_geom('nx', 151, 'ny', 153, 'fov', 45);
-% sg = sino_geom('par', 'nb', size(Sino,2), 'na', nb_cryst, ...
-%     'dr', 2*distrange/size(Sino,2));
-% img_fbp = em_fbp(sg, ig, Sino');
-% figure;imshow(img_fbp/max(img_fbp(:)),[])
-% 
-% Anni2D = Anni3D(:,:,ceil(end/2));
-% figure;imshow([img_fbp/max(img_fbp(:)) Anni2D/max(Anni2D(:))],[])
-% 
-% 
-% %% Reconstruction-less image generation
-% 
-% imgsize = size(img_fbp);
-% reconparams = struct('nb_cryst',nb_cryst,'R1',R1,'distrange',distrange,...
-%     'imgres',imgres,'imgsize',imgsize);
-% 
-% Ind_coin = [Ind_coin1_accept Ind_coin2_accept];
-% img_direct = PETrecon_TOF_direct(CorrectedTime, detectorIds, Ind_coin, reconparams);
-% figure; imshow(img_direct,[])
-% figure;imshow([img_fbp/max(img_fbp(:)) Anni2D/max(Anni2D(:)) img_direct/max(img_direct(:))],[])
-% 
-% 
-% % deltat = CorrectedTime(Ind_coin1_accept) - CorrectedTime(Ind_coin2_accept);
-% % clight = 30; % c = 30cm/ns
-% % deltar = deltat*clight/2; 
-% % % figure; hist(deltar)
-% % % figure; hist(deltat)
-% % 
-% % theta = detid_pair/nb_cryst*2*pi;
-% % x_ = R1*sin(theta);
-% % y_ = R1*cos(theta);
-% % 
-% % p1 = [x_(:,1), y_(:,1)];
-% % p2 = [x_(:,2), y_(:,2)];
-% % p1_p2 = p1 - p2;
-% % n_p1_p2 = p1_p2./sqrt(sum(p1_p2.^2,2));
-% % p0 = -n_p1_p2.*deltar + (p1+p2)/2;
-% % 
-% % test_all = [detid_pair,p1,p2,p0,sqrt(sum(p0.^2,2))];
-% % % figure;hist(sqrt(sum(p0.^2,2)),100)
-% % 
-% % %% Show image
-% % p0(sqrt(sum(p0.^2,2))>80) = NaN;
-% % p0(find(isnan(p0(:,1))),:)=[];
-% % xp0 = p0(:,1);
-% % yp0 = p0(:,2);
-% % % figure;hist(sqrt(sum(p0.^2,2)),100)
-% % % figure;hist3(p0,'Nbins',[100,100])
-% % % figure;scatter(xp0, yp0, 1); axis equal
-% % % 
-% % % xImage = floor(xp0 - min(xp0)) + 1;
-% % % yImage = floor(yp0 - min(yp0)) + 1;
-% % 
-% % res = 0.3;
-% % img_norecon = zeros(size(img,1),size(img,2));
-% % xImage = ((1:size(img,1))-(1+size(img,1))/2)*res;
-% % yImage = ((1:size(img,2))-(1+size(img,2))/2)*res;
-% % % Image = zeros(450,450);
-% % % xImage = ((1:450)-(1+450)/2)*res;
-% % % yImage = ((1:450)-(1+450)/2)*res;
-% % 
-% % for ii = 1:length(xp0)
-% %     ixp0 = xp0(ii);
-% %     iyp0 = yp0(ii);
-% %     
-% %     if(ixp0<min(xImage)||ixp0>max(xImage)||iyp0<min(yImage)||iyp0>max(yImage))
-% %          continue
-% %     end
-% %     
-% %     [~,xind] = min(abs(ixp0-xImage));
-% %     [~,yind] = min(abs(iyp0-yImage));
-% % 
-% %     img_norecon(xind,yind) = img_norecon(xind,yind) + 1;
-% % end
-% % 
-% % figure; imshow(img_norecon,[])
-% % figure;imshow([img_fbp/max(img_fbp(:)) Anni2D/max(Anni2D(:)) img_norecon/max(img_norecon(:))],[])
-% 
-% 
-% % %%
-% % 
-% % [sortedenergy, sortenergyInd] = sort(energy);
-% % sortInd_coinenergy = find(diff(sortedenergy)==0);
-% % Ind_coin1 = sortenergyInd(sortInd_coinenergy);
-% % Ind_coin2 = sortenergyInd(sortInd_coinenergy+1);
-% % 
-% % 
-% % test = [AlleventID(Ind_coin1) AlleventID(Ind_coin2)];
-% % test2 = test(1:100,:);
-% % 
-% % 
-% % 
-% % 
-% 
-% 
-% 
-% 
-% 
-% 

@@ -4,8 +4,8 @@ clc
 
 projectName = 'PairProd';
 patientName = 'GBMHY_final_100m';
-taglist = {'run01','run02'};
-MergedName = 'run0102';
+taglist = {'run01'};
+MergedName = 'run01';
 
 M0 = 0;
 M_Anni0 = 0;

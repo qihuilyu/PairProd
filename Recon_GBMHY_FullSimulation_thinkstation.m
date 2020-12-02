@@ -58,7 +58,7 @@ Anni3D = reshape(M_Anni*numeventsvec,size(masks{1}.mask));
 Anni2D = Anni3D(:,:,slicenum);
 figure;imshow(Anni2D,[])
 
-dose3D = reshape(full(sum(M,2)),size(masks{1}.mask));
+dose3D = reshape(M*numeventsvec,size(masks{1}.mask));
 dose2D = dose3D(:,:,slicenum);
 figure;imshow(dose2D,[])
 
