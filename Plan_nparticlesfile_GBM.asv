@@ -1,9 +1,0 @@
-load('D:\datatest\PairProd\GBMHY_100m\PairProd\results\GBMHY_100m PairProd Info7 eta0 result.mat')
-xPolish = result.xPolish;
-
-ds = 1000;
-fileID = fopen(['D:\datatest\PairProd\GBM_final\nparticles_GBMHY_100m PairProd Info7 eta0 result.txt'],'w');
-fprintf(fileID,'%6.4f \n',ceil(xPolish/ds));
-fclose(fileID);
-
-
