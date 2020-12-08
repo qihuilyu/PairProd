@@ -2,10 +2,15 @@ clear
 close all
 clc
 
+t = tic;
+while toc(t)<7200
+    pause(2)
+end
+
 projectName = 'PairProd';
 patientName = 'GBMHY_final_100m';
-taglist = {'run01'};
-MergedName = 'run01';
+taglist = {'run01','run02','run03','run04','run05','run06','run07','run08','run09','run10'};
+MergedName = 'run01torun10';
 
 M0 = 0;
 M_Anni0 = 0;
@@ -99,46 +104,46 @@ save(fullfile(dosematrixFolder,[patientName projectName '_M_HighRes.mat']),'M','
 
 
 save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection_directmerge.mat']),...
-    'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','numeventsvec','CorrectedTime');
+    'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','numeventsvec','CorrectedTime','-v7.3');
 
 
 
-save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),...
-    'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','numeventsvec');
-
-beamSizes = squeeze(sum(sum(params.BeamletLog0,1),2));
-cumsumbeamSizes = cumsum([0; beamSizes]);
-beamNoshift = cumsumbeamSizes(beamNo);
-beamletIDs = double(beamletNo) + beamNoshift;
-
-%% fluence map segments
-numbeamlets = size(M,2);
-
-x_ = numeventsvec;
-dose = reshape(M*x_,size(masks{1}.mask));
-figure;imshow3D(dose,[])
-
-%% Time correction: Adding time of previous events
-numeventbatch = 1e+06;
-numevent = max(eventIds);
-numbatches = ceil(numevent/numeventbatch);
-deltatime_event = normrnd(eventrate,eventrate/5,numeventbatch,numbeamlets);
-cumsum_eventtime_batch = cumsum(deltatime_event);
-
-event_perbatchIDs = mod(eventIds-1, numeventbatch)+1;
-event_batchID = (eventIds - event_perbatchIDs)/numeventbatch + 1;
-event_perbatch_beamletIDs = sub2ind([numeventbatch,numbeamlets], event_perbatchIDs, beamletIDs);
-
-numbeams = max(beamNo(:));
-batchtime = max(cumsum_eventtime_batch(event_perbatch_beamletIDs));
-beamtime = batchtime*numbatches;
-deltatime_beam = beamtime*(1:numbeams)'; % 1 ms
-
-CorrectedTime = globalTimes + cumsum_eventtime_batch(event_perbatch_beamletIDs)...
-    + event_batchID*batchtime + beamNo*beamtime;
-[sortedtime, sortInd] = sort(CorrectedTime);
-save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'CorrectedTime','sortedtime','sortInd','-append');
-
+% save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),...
+%     'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','numeventsvec');
+% 
+% beamSizes = squeeze(sum(sum(params.BeamletLog0,1),2));
+% cumsumbeamSizes = cumsum([0; beamSizes]);
+% beamNoshift = cumsumbeamSizes(beamNo);
+% beamletIDs = double(beamletNo) + beamNoshift;
+% 
+% %% fluence map segments
+% numbeamlets = size(M,2);
+% 
+% x_ = numeventsvec;
+% dose = reshape(M*x_,size(masks{1}.mask));
+% figure;imshow3D(dose,[])
+% 
+% %% Time correction: Adding time of previous events
+% numeventbatch = 1e+06;
+% numevent = max(eventIds);
+% numbatches = ceil(numevent/numeventbatch);
+% deltatime_event = normrnd(eventrate,eventrate/5,numeventbatch,numbeamlets);
+% cumsum_eventtime_batch = cumsum(deltatime_event);
+% 
+% event_perbatchIDs = mod(eventIds-1, numeventbatch)+1;
+% event_batchID = (eventIds - event_perbatchIDs)/numeventbatch + 1;
+% event_perbatch_beamletIDs = sub2ind([numeventbatch,numbeamlets], event_perbatchIDs, beamletIDs);
+% 
+% numbeams = max(beamNo(:));
+% batchtime = max(cumsum_eventtime_batch(event_perbatch_beamletIDs));
+% beamtime = batchtime*numbatches;
+% deltatime_beam = beamtime*(1:numbeams)'; % 1 ms
+% 
+% CorrectedTime = globalTimes + cumsum_eventtime_batch(event_perbatch_beamletIDs)...
+%     + event_batchID*batchtime + beamNo*beamtime;
+% [sortedtime, sortInd] = sort(CorrectedTime);
+% save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'CorrectedTime','sortedtime','sortInd','-append');
+% 
 
 
 

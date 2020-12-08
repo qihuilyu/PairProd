@@ -1,12 +1,12 @@
 clear
 close all
 clc
-%
-% t = tic;
-% while toc(t)<7200*3
-%     pause(2)
-% end
-% !('/media/raid1/qlyu/PairProd/datatest/collect_doescalc_pairprod.sh')
+
+t = tic;
+while toc(t)<7200
+    pause(2)
+end
+!('/media/raid1/qlyu/PairProd/datatest/collect_doescalc_pairprod.sh')
 
 patientName = 'GBMHY_final_100m';
 projectName = 'PairProd';
@@ -15,7 +15,7 @@ dosecalcFolder = fullfile(patFolder,'dosecalc');
 maskfile = fullfile(dosecalcFolder,'PairProd_masks.h5');
 fmapsfile = fullfile(dosecalcFolder,'PairProd_fmaps.h5');
 numeventsfile = fullfile(dosecalcFolder,[patientName '_nruns_10.txt']);
-taglist = {'run01','run02'};
+taglist = {'run06','run07','run08'};
 
 projectFolder = fullfile(patFolder,'PairProd');
 paramsFolder = fullfile(projectFolder,'params');
@@ -149,39 +149,39 @@ for itag = 1:numel(taglist)
         plot(beamdet_accept(ii,:),'LineWidth',2); hold on
     end
     % legend({'beam 1','beam 5','beam 9','beam 13','beam 17'})
-    legend({'beam 1','beam 3','beam 5','beam 7'})
+%     legend({'beam 1','beam 3','beam 5','beam 7'})
     xlabel('Detector ID')
     ylabel('Detected photon counts')
     title('Detected photon counts within 10% energy resolution')
     set(gca,'FontSize',20)
+    saveas(gcf,fullfile(dosematrixFolder,['Original_counts_' tag '.png']))
     
-    thresh = median(beamdet_accept,2)*5;
-    beamNo_detectorIDs_rej = find(beamdet_accept-repmat(thresh,[1,]));
+    thresh = median(beamdet_accept,2)*10;
+    beamNo_detectorIDs_rej = find(beamdet_accept-repmat(thresh,[1,size(beamdet_accept,2)])>0);
     beamNo_detectorIDs = (detectorIds-1)*size(beamdet_accept,1) + beamNo;
-    badID = ismember(beamNo_detectorIDs,beamNo_detectorIDs_rej);
-    badIDmask = zeros(size(beamNo_detectorIDs));
-    badIDmask(badID) = 1;
+    badIDmask = ismember(beamNo_detectorIDs,beamNo_detectorIDs_rej);
     
     newbeamdet_accept = full(sparse(beamNo(badIDmask==0),detectorIds(badIDmask==0),1));
     figure; set(gcf,'pos',[2715   148    1480    1001])
-    for ii = 1:2:size(newbeamdet_accept,1)
+    for ii = 1:size(newbeamdet_accept,1)
         plot(newbeamdet_accept(ii,:),'LineWidth',2); hold on
     end
     % legend({'beam 1','beam 5','beam 9','beam 13','beam 17'})
-    legend({'beam 1','beam 3','beam 5','beam 7'})
+%     legend({'beam 1','beam 3','beam 5','beam 7'})
     xlabel('Detector ID')
     ylabel('Detected photon counts')
     title('Detected photon counts within 10% energy resolution')
     set(gca,'FontSize',20)
+    saveas(gcf,fullfile(dosematrixFolder,['Processed_counts_' tag '.png']))
     
-    beamletIDs(badID,:) = [];
-    detectorIds(badID,:) = [];
-    beamNo(badID,:) = [];
-    beamletNo(badID,:) = [];
-    energy(badID,:) = [];
-    eventIds(badID,:) = [];
-    globalTimes(badID,:) = [];
-    Mega(badID,:) = [];
+    beamletIDs(badIDmask,:) = [];
+    detectorIds(badIDmask,:) = [];
+    beamNo(badIDmask,:) = [];
+    beamletNo(badIDmask,:) = [];
+    energy(badIDmask,:) = [];
+    eventIds(badIDmask,:) = [];
+    globalTimes(badIDmask,:) = [];
+    Mega(badIDmask,:) = [];
     save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection_' tag '.mat']),'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','-v7.3');
     
     

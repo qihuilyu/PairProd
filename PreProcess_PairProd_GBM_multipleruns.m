@@ -1,9 +1,9 @@
 clear
 close all
 clc
-%
+
 % t = tic;
-% while toc(t)<7200*3
+% while toc(t)<7200
 %     pause(2)
 % end
 % !('/media/raid1/qlyu/PairProd/datatest/collect_doescalc_pairprod.sh')
@@ -15,7 +15,7 @@ dosecalcFolder = fullfile(patFolder,'dosecalc');
 maskfile = fullfile(dosecalcFolder,'PairProd_masks.h5');
 fmapsfile = fullfile(dosecalcFolder,'PairProd_fmaps.h5');
 numeventsfile = fullfile(dosecalcFolder,[patientName '_nruns_10.txt']);
-taglist = {'run01','run02'};
+taglist = {'run08','run09','run10'};
 
 projectFolder = fullfile(patFolder,'PairProd');
 paramsFolder = fullfile(projectFolder,'params');
