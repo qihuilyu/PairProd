@@ -131,16 +131,16 @@ PTV2D = 0*PTV2D;
 PTV2D(ind1+1:end,ind2+1:end) = PTV2Dold(1:end-ind1,1:end-ind2 );
 
 img_direct(img_direct<0) = 0;
-img_direct = img_direct/mean(img_direct(PTV2D==1));
+img_direct = img_direct/mean(img_direct(PPTV2DTV==1));
 img_direct(BODY2D==0) = 0;
 img_direct3D = repmat(img_direct,[1,1,size(Anni3D,3)]);
 planName = 'img_direct';
 addDoseToGui_Move_QL(img_direct3D,[planName],xoff,yoff)
 
 img_fbp(img_fbp<0) = 0;
-img_fbp = img_fbp/mean(img_fbp(PTV2D==1));
-img_fbp(BODY2D==0) = 0;
+img_fbp = img_fbp/mean(img_fbp(PTV==1));
 img_fbp3D = repmat(img_fbp,[1,1,size(Anni3D,3)]);
+img_fbp3D(BODY2D_rep==0) = 0;
 planName = 'img_fbp';
 addDoseToGui_Move_QL(img_fbp3D,[planName],xoff,yoff)
 
