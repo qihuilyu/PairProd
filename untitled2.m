@@ -1,6 +1,6 @@
-dosecalcFolder = '/media/raid1/qlyu/PairProd/datatest/phantom/dosecalc';
+dosecalcFolder = '/media/raid1/qlyu/PairProd/datatest/';
 beamlistFile = fullfile(dosecalcFolder,['beamlist.txt']);
-numbeams = 20;
+numbeams = 360;
 Angles = [(0:360/numbeams:359)' zeros(numbeams,1)];
 fileID = fopen(beamlistFile,'w');
 for ii = 1:size(Angles,1)

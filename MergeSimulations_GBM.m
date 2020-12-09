@@ -2,10 +2,10 @@ clear
 close all
 clc
 
-t = tic;
-while toc(t)<7200
-    pause(2)
-end
+% t = tic;
+% while toc(t)<7200
+%     pause(2)
+% end
 
 projectName = 'PairProd';
 patientName = 'GBMHY_final_100m';
