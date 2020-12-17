@@ -10,7 +10,8 @@ clc
 
 patientName = 'phantom_nanoparticles_360beam_50m_thinslice5mm_CTsimNEW_run3';
 projectName = 'CTsim';
-patFolder = fullfile('/media/raid1/qlyu/PairProd/datatest',patientName);
+Folder = '/media/raid1/qlyu/PairProd/datatest';
+patFolder = fullfile(Folder,patientName);
 dosecalcFolder = fullfile(patFolder,'dosecalc');
 h5file = fullfile(dosecalcFolder,[projectName '_beamletdose.h5']);
 maskfile = fullfile(dosecalcFolder,[projectName '_masks.h5']);
@@ -56,7 +57,7 @@ figure;imshow3D(img,[0,2000])
 save(fullfile(dosematrixFolder,[patientName projectName '_dicomimg.mat']),'img','imgres');
 
 %%
-load('/media/raid1/qlyu/PairProd/datatest/phantom_nanoparticles_360beam_200m_thinslice5mm_CTsimNEW_blankfield/dosecalc/CTsim_CTprojection.mat','CTprojection')
+load(fullfile(Folder,'phantom_nanoparticles_360beam_200m_thinslice5mm_CTsimNEW_blankfield','dosecalc','CTsim_CTprojection.mat'),'CTprojection');
 Projection0 = CTprojection(:,:,1)/4;
 
 load(DetectedEventsCTfile,'CTprojection');
