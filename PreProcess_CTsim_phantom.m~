@@ -8,14 +8,14 @@ clc
 % end
 % !('/media/raid1/qlyu/PairProd/datatest/collect_doescalc_pairprod.sh')
 
-patientName = 'CTphantom_360beam_10m_CTsim';
+patientName = 'phantom_nanoparticles_360beam_50m_thinslice5mm_CTsimNEW_run3';
 projectName = 'CTsim';
 patFolder = fullfile('/media/raid1/qlyu/PairProd/datatest',patientName);
 dosecalcFolder = fullfile(patFolder,'dosecalc');
 h5file = fullfile(dosecalcFolder,[projectName '_beamletdose.h5']);
 maskfile = fullfile(dosecalcFolder,[projectName '_masks.h5']);
 fmapsfile = fullfile(dosecalcFolder,[projectName '_fmaps.h5']);
-DetectedEventsCTfile = fullfile(dosecalcFolder,[projectName '_DetectedEventsCT.h5']);
+DetectedEventsCTfile = fullfile(dosecalcFolder,[projectName '_CTprojection.mat']);
 
 %% masks, fmaps, dose matrix, annihilation matrix
 [M,dose_data,masks]=BuildDoseMatrix_CTsim(h5file, maskfile, fmapsfile);
@@ -26,7 +26,7 @@ figure;imshow3D(dose)
 pdose = 25;
 [StructureInfo, params] = InitIMRTparams_DLMCforRyan(M,dose_data,masks,pdose,[1,2,0]);
 
-projectFolder = fullfile(patFolder,'PairProd');
+projectFolder = fullfile(patFolder,projectName);
 paramsFolder = fullfile(projectFolder,'params');
 mkdir(paramsFolder)
 
@@ -55,111 +55,74 @@ end
 figure;imshow3D(img,[0,2000])
 save(fullfile(dosematrixFolder,[patientName projectName '_dicomimg.mat']),'img','imgres');
 
+%%
+load('/media/raid1/qlyu/PairProd/datatest/phantom_nanoparticles_360beam_200m_thinslice5mm_CTsimNEW_blankfield/dosecalc/CTsim_CTprojection.mat','CTprojection')
+Projection0 = CTprojection(:,:,1)/4;
 
-%% Ring detection
-info = h5info(DetectedEventsCTfile);
-detectorIds1 = double(h5read(DetectedEventsCTfile, '/detectorIds1')) + 1; %
-detectorIds2 = double(h5read(DetectedEventsCTfile, '/detectorIds2')) + 1; %
-beamNo = double(h5read(DetectedEventsCTfile, '/beamNo')) + 1; %
-beamletNo = double(h5read(DetectedEventsCTfile, '/beamletNo')) + 1; %
-energy = h5read(DetectedEventsCTfile, '/energy'); %
-eventIds = double(h5read(DetectedEventsCTfile, '/eventIds')) + 1; %
-globalTimes = h5read(DetectedEventsCTfile, '/globalTimes'); %
+load(DetectedEventsCTfile,'CTprojection');
+LI = log(permute(repmat(Projection0,[1,1,size(CTprojection,3)]),[2,1,3])./permute(CTprojection,[2,1,3]));
 
-det_dim1 = max(detectorIds1);
-det_dim2 = max(detectorIds2);
-detectorIds = (detectorIds2-1)*det_dim1+ detectorIds1;
-
-Mega = [globalTimes,eventIds,energy,beamletNo,beamNo,detectorIds];
-save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection_original.mat']),'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','-v7.3');
-
-%% Clean data
-numevent = max(eventIds);
-beamSizes = squeeze(sum(sum(params.BeamletLog0,1),2));
-cumsumbeamSizes = cumsum([0; beamSizes]);
-beamNoshift = cumsumbeamSizes(beamNo);
-beamletIDs = double(beamletNo) + beamNoshift;
-AlleventID = (beamletIDs-1)*numevent + eventIds;
-nb_cryst = max(detectorIds);
-AlldetectorID = (AlleventID-1)*nb_cryst + detectorIds;
-[sortedAlldetectorID, sortAlldetectorIDInd] = sort(AlldetectorID);
-sortInd_sameparticle = find(diff(sortedAlldetectorID)==1);
-Ind_coin1 = sortAlldetectorIDInd(sortInd_sameparticle);
-Ind_coin2 = sortAlldetectorIDInd(sortInd_sameparticle+1);
-mask_sameenergy = (energy(Ind_coin1)-energy(Ind_coin2)==0);
-timediff = globalTimes(Ind_coin1)-globalTimes(Ind_coin2);
-badIDbuff1 = Ind_coin1(mask_sameenergy & timediff>0);
-badIDbuff2 = Ind_coin2(mask_sameenergy & timediff<0);
-badID1 = union(badIDbuff1,badIDbuff2);
-
-clearvars Ind_coin1 Ind_coin2 mask_sameenergy sortInd_sameparticle sortAlldetectorIDInd sortedAlldetectorID timediff badIDbuff1 badIDbuff2
-
-% boundary issue(det id: 1 and 1440)
-AlldetectorID2 = (AlleventID-1)*nb_cryst + mod(detectorIds,nb_cryst);
-[sortedAlldetectorID, sortAlldetectorIDInd] = sort(AlldetectorID2);
-sortInd_sameparticle = find(diff(sortedAlldetectorID)==1);
-Ind_coin1 = sortAlldetectorIDInd(sortInd_sameparticle);
-Ind_coin2 = sortAlldetectorIDInd(sortInd_sameparticle+1);
-mask_sameenergy = (energy(Ind_coin1)-energy(Ind_coin2)==0);
-timediff = globalTimes(Ind_coin1)-globalTimes(Ind_coin2);
-badIDbuff1 = Ind_coin1(mask_sameenergy & timediff>0);
-badIDbuff2 = Ind_coin2(mask_sameenergy & timediff<0);
-badID2 = union(badIDbuff1,badIDbuff2);
-
-badID = union(badID1,badID2);
-clearvars Ind_coin1 Ind_coin2 mask_sameenergy sortInd_sameparticle sortAlldetectorIDInd sortedAlldetectorID timediff badIDbuff1 badIDbuff2 badID1 badID2
-
-beamletIDs(badID,:) = [];
-detectorIds(badID,:) = [];
-beamNo(badID,:) = [];
-beamletNo(badID,:) = [];
-energy(badID,:) = [];
-eventIds(badID,:) = [];
-globalTimes(badID,:) = [];
-Mega(badID,:) = [];
-% save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','-v7.3');
-
-%% fluence map segments
-numbeamlets = size(M,2);
-
-x_ = ones(numbeamlets,1);
-dose = reshape(M*x_,size(masks{1}.mask));
-figure;imshow3D(dose,[])
-
-selectbeamNo = 2;
-x_onebeam = zeros(numbeamlets,1);
-x_onebeam(cumsumbeamSizes(selectbeamNo)+1:cumsumbeamSizes(selectbeamNo+1)) = 1;
-dose_onebeam = reshape(M*x_onebeam,size(masks{1}.mask));
-figure;imshow3D(dose_onebeam,[])
-
-% %% Time correction: Adding time of previous events
-% doserate = 0.1/60; % (0.1Gy/min)
-% time = max(dose_onebeam(:))*numevent/doserate;
-% eventrate = time/numevent*1e+09; % ns/event
-% 
-% numeventbatch = 1e+06;
-% numbatches = ceil(numevent/numeventbatch);
-% deltatime_event = normrnd(eventrate,eventrate/5,numeventbatch,numbeamlets);
-% cumsum_eventtime_batch = cumsum(deltatime_event);
-% 
-% event_perbatchIDs = mod(eventIds-1, numeventbatch)+1;
-% event_batchID = (eventIds - event_perbatchIDs)/numeventbatch + 1;
-% event_perbatch_beamletIDs = sub2ind([numeventbatch,numbeamlets], event_perbatchIDs, beamletIDs);
-% 
-% numbeams = max(beamNo(:));
-% batchtime = max(cumsum_eventtime_batch(event_perbatch_beamletIDs));
-% beamtime = batchtime*numbatches;
-% 
-% CorrectedTime = globalTimes + cumsum_eventtime_batch(event_perbatch_beamletIDs)...
-%         + event_batchID*batchtime + beamNo*beamtime;
-% [sortedtime, sortInd] = sort(CorrectedTime);
-% save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'CorrectedTime','sortedtime','sortInd','numevent','eventrate','-append');
+LI(isinf(LI)) = 0;
+LI(isnan(LI)) = 0;
+figure;imshow3D(LI,[]);
+save(fullfile(dosematrixFolder,'LineIntegrals.mat'),'CTprojection','LI');
 
 
 %%
-Projection_beam = full(sparse(detectorIds,beamNo,1,det_dim1*det_dim2,max(beamNo)));
-Projection_beam = reshape(Projection_beam,[det_dim1,det_dim2,size(Projection_beam,2)]);
 
-figure;imshow3D(Projection_beam,[]);
+
+	cg = ct_geom('fan', ...
+	'ns', 250, ... % detector channels
+	'nt', 500, ... % detector rows
+	'na', 360, ... % angular samples
+	'offset_s', 0, ... % quarter-detector offset
+	'dsd', 1000, ...
+	'dod', 333.3, ...
+	'dfs', inf, ... % arc
+	'ds', 2, ... % detector pitch
+	'dt', 2, ... % detector row spacing for 0.625mm slices, 2009-12-06
+	'pitch',0,...
+    'orbit_start',90);
+	ig = image_geom('nx', size(img,1), 'ny', size(img,2), 'nz', 100, 'fov', size(img,1)*imgres);
+	mask2 = true([ig.nx ig.ny]);
+	mask2(end) = 0; % trick: test it
+	ig.mask = repmat(mask2, [1 1 ig.nz]);
+    li_hat = fdk_filter(LI(126:end-125,:,1:end), 'ramp', cg.dsd, cg.dfs, cg.ds);
+	
+    
+    args = {flip(li_hat,1), cg, ig, 'ia_skip', 1}; % increase 1 for faster debugging
+	CT_FBP = cbct_back(args{:}, 'use_mex', 1, 'back_call', @jf_mex);
+    figure;imshow3D(CT_FBP,[0,0.15])
+    
+ resultsFolder = fullfile(projectFolder,'results');
+ mkdir(resultsFolder)
+ save(fullfile(resultsFolder,'Recon_CT.mat'),'CT_FBP')
+   
+% 	back2 = cbct_back(args{:}, 'use_mex', 1, 'back_call', @fdk_mex);
+% 	max_percent_diff(back1, back2)
+% 	xfdk = feldkamp(cg, ig, li_hat, ...
+% 		'extrapolate_t', ceil(1.3 * cg.nt/2)); % todo: compute carefully
+% 
+% 	pr [ig.nx ig.ny ig.nz ig.dx ig.dy ig.dz]
+% 	pr [cg.ns cg.nt cg.na cg.ds cg.dt]
+% 	printm('image Mbytes %d', ig.nx*ig.ny*ig.nz*4 / 1024^2)
+% 	printm('proj Mbytes %d', cg.ns*cg.nt*cg.na*4 / 1024^2)
+% 
+% 	printm 'ellipse proj' % somewhat realistic phantom object
+% 	ell = [ ...
+% 		[30 10 10	150 150 280	0 0 1000]; % 30cm diam
+% 		[80 10 10	50 50 30	0 0 300]; % bone-like
+% 		[-10 -40 75	40 40 40	0 0 600];
+% 		[-10 80 -20	30 30 30	0 0 600];
+% 	];
+% %	xtrue = ellipsoid_im(ig, ell); im(xtrue); return
+% 
+% 	proj = ellipsoid_proj(cg, ell);
+% 	proj = fdk_filter(proj, 'ramp', cg.dsd, cg.dfs, cg.ds);
+% 	if 0 % zero outer edges of projection for testing
+% 		proj([1 cg.ns], :, :) = 0;
+% 		proj(:, [1 cg.nt], :) = 0;
+% 	end
+
 
 
