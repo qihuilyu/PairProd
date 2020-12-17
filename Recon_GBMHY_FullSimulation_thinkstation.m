@@ -1,8 +1,8 @@
-clear
-close all
-clc
+% clear
+% close all
+% clc
 
-patientName = 'GBMHY_final_100m_run01to05';
+patientName = 'GBMHY_final_100m_run01torun10';
 projectName = 'PairProd';
 patFolder = fullfile('D:\datatest\PairProd\',patientName);
 OutputFileName = fullfile('D:\datatest\PairProd\','GBMHY.mat');
@@ -37,7 +37,7 @@ x_CT = img(:,:,end+1-slicenum)-1000;
 
 %% Identify LOR
 EnergyResolution = 0.1;
-CoincidenceTime = 1;  % ns 
+CoincidenceTime = 1;  % ns
 
 Ind_coin_511 = IdentifyLOR_511(energy, CorrectedTime, CoincidenceTime);
 Ind_coin_accept = IdentifyLOR(energy, CorrectedTime, CoincidenceTime, EnergyResolution);
@@ -46,6 +46,10 @@ TruePositive = length(Ind_coin_511)/length(Ind_coin_accept);
 % save(fullfile(dosematrixFolder,[patientName projectName '_detid_pair.mat']),'Ind_coin_511','Ind_coin_accept');
 
 %% Image Reconstruction
+TimeResolution = 0.3; % 400 ps
+CorrectedTime_TR = CorrectedTime + TimeResolution*randn(size(CorrectedTime));
+Ind_coin_accept = IdentifyLOR(energy, CorrectedTime_TR, CoincidenceTime, EnergyResolution);
+
 R1 = 1200;
 distrange = 300;
 imgsize = size(img);
@@ -89,6 +93,11 @@ ci = exp(-li);
 img_fbp = em_fbp_QL(sg, ig, sino./ci);
 
 %% Reconstruction-less image generation
+TimeResolution = 0.02; % 20 ps
+CorrectedTime_TR = CorrectedTime + TimeResolution*randn(size(CorrectedTime));
+Ind_coin_accept = IdentifyLOR(energy, CorrectedTime_TR, CoincidenceTime, EnergyResolution);
+detid_pair = detectorIds(Ind_coin_accept);
+
 cilist = GetACfactor_list(ci, detid_pair, nb_cryst, R1, distrange, newunidist);
 reconparams = struct('nb_cryst',nb_cryst,'R1',R1,'distrange',distrange,...
     'imgres',imgres,'imgsize',[ig.nx, ig.ny]);
@@ -143,5 +152,37 @@ img_fbp(BODY2D==0) = 0;
 img_fbp3D = repmat(img_fbp,[1,1,size(Anni3D,3)]);
 planName = 'img_fbp';
 addDoseToGui_Move_QL(img_fbp3D,[planName],xoff,yoff)
+
+%%
+load('D:\datatest\patient\patInfo.mat')
+
+% save('D:\datatest\patient\patInfo.mat','patInfo')
+
+
+%% Dose Wash
+patientName = 'GBMHY_PairProd';
+ImageSize = [2,2];
+jj=find(strcmp({patInfo.Name},patientName));
+strNum = patInfo(jj).strNum;
+StructureInfo = patInfo(jj).StructureInfo;
+
+FigureNum = get(gcf,'Number');
+global planC stateS
+patInfo(16).coordInd = [197,197,71];
+ChangeCERRdoseWash_QL(patientName,patInfo)
+
+figuresFolder = ['D:\datatest\PairProd\GoodResult\dosewash\'];
+mkdir(figuresFolder)
+figureName = [patientName projectName];
+[EntireImg,Imgs,ImgsInit,Masks] = SaveDoseWash_QL(patInfo, figuresFolder,figureName,[9:12],patientName,FigureNum,ImageSize);
+
+%%
+NewImg = PutImgTogether_VariedSize_Horizontal((Imgs(1:2,[2,5])),0);
+figure;imshow(NewImg)
+
+figure;imshow([[Imgs{1,2} Imgs{1,5}]; [Imgs{2,2} Imgs{2,5}]])
+
+
+
 
 

@@ -2,7 +2,7 @@ clear
 close all
 clc
 
-patientName = 'phantom_nanoparticles_50m';
+patientName = 'CTphantom_20beams_50m';
 projectName = 'PairProd';
 patFolder = fullfile('D:\datatest\PairProd\',patientName);
 projectFolder = fullfile(patFolder,projectName);
@@ -245,62 +245,3 @@ img_direct_corrected = img_direct./fluence2;
 img_direct_corrected(mask0==0)=0;
 figure;imshow([Anni2D_corrected/max(Anni2D_corrected(:)) img_fbp_corrected/max(img_fbp_corrected(:)) img_direct_corrected/max(img_direct_corrected(:))],[0.2,1])
 
-%%
-
-ROIInd = [[99.1875 82.5625 8.00000000000001 7.87499999999999]
-        [102.5 63.5 5 5]
-        [89.5 46.5 5 5]
-        [68.5 39.5 5 5]
-        [48.5 46.5 4 5]
-        [35.5 62.5 4 7]
-        [35.5 84.5 4 7]
-        [48.0625 102.3125 4.125 6.25]
-        [68.5 108.5 4 6] 
-    ]; 
-
-ROIrow1 = ceil(ROIInd(:,2));
-ROIcolumn1 = ceil(ROIInd(:,1));
-ROIrow2 = floor(ROIInd(:,2))+floor(ROIInd(:,4));
-ROIcolumn2 = floor(ROIInd(:,1))+floor(ROIInd(:,3));
-
-Imgs(1).Img = CT_FBP(:,:,end/2);
-% Imgs(1).Img = Anni2D_corrected;
-% Imgs(2).Img = img_direct_corrected;
-% Imgs(3).Img = img_fbp_corrected;
-
-for i = 1
-    Img = Imgs(i).Img;
-    for j = 1:size(ROIInd,1)
-        ImgROI = Img(ROIrow1(j):ROIrow2(j),ROIcolumn1(j):ROIcolumn2(j));
-        
-        if(j==1)
-            imginten0 = mean(ImgROI(:));
-        end
-        ImgROI = ImgROI/imginten0;
-        imginten(i,j) = mean(ImgROI(:));
-        imgnoise(i,j) = std(ImgROI(:));
-    end
-end
-
-
-%%
-test = (imginten-imginten(:,1))./repmat(imginten(:,1),[1,size(imginten,2)])*100;
-AtomicNum = [53,56,64,70,73,79,83];
-MarkerSize = 50;
-LineWidth = 3;
-figure;scatter(AtomicNum,test(1,3:end),MarkerSize,'LineWidth',LineWidth); hold on;
-scatter(AtomicNum,test(2,3:end),MarkerSize,'LineWidth',LineWidth); hold on;
-scatter(AtomicNum,test(3,3:end),MarkerSize,'LineWidth',LineWidth); hold on;
-refline;
-% icolor = 'r';
-% figure;scatter(AtomicNum,test(1,3:end),[],icolor);hline=refline; hline.Color = icolor;  hold on;
-% icolor = 'y';
-% scatter(AtomicNum,test(2,3:end),[],icolor);hline2=refline; hline2.Color = icolor;
-% icolor = 'b';
-% scatter(AtomicNum,test(3,3:end),[],icolor);hline3=refline; hline3.Color = icolor;  hold on;
-
-xlabel('Atomic No')
-ylabel('Increased contrast to water (%)')
-set(gca,'FontSize',15)
-
-legend({'Ground truth','Reconstruction-less','FBP'})

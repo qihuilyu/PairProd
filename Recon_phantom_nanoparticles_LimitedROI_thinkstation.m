@@ -184,7 +184,7 @@ TruePositive = length(Ind_coin_511)/length(Ind_coin_accept);
 % save(fullfile(dosematrixFolder,[patientName projectName '_detid_pair.mat']),'Ind_coin_511','Ind_coin_accept');
 
 %% Image Reconstruction
-TimeResolution = 0.4; % 400 ps
+TimeResolution = 0.3; % 400 ps
 CorrectedTime_TR = CorrectedTime + TimeResolution*randn(size(CorrectedTime));
 Ind_coin_accept = IdentifyLOR(energy, CorrectedTime_TR, CoincidenceTime, EnergyResolution);
 
@@ -248,8 +248,8 @@ img_fbp = em_fbp_QL(sg, ig, sino./ci);
 TimeResolution = 0.02; % 20 ps
 CorrectedTime_TR = CorrectedTime + TimeResolution*randn(size(CorrectedTime));
 Ind_coin_accept = IdentifyLOR(energy, CorrectedTime_TR, CoincidenceTime, EnergyResolution);
-
 detid_pair = detectorIds(Ind_coin_accept);
+
 cilist = GetACfactor_list(ci, detid_pair, nb_cryst, R1, distrange, newunidist);
 reconparams = struct('nb_cryst',nb_cryst,'R1',R1,'distrange',distrange,...
     'imgres',imgres,'imgsize',[ig.nx, ig.ny]);
