@@ -32,7 +32,7 @@ x_CT = img(:,:,end+1-slicenum)-1000;
 
 %%
 numevents = max(eventIds);
-numevents = numevents + 99 - mod(numevents-1,100);
+numevents = numevents + 100 - mod(numevents,100);
 
 Anni3D = reshape(full(sum(M_Anni,2)),size(masks{1}.mask));
 Anni2D = Anni3D(:,:,slicenum);
@@ -118,6 +118,7 @@ fluence2(mask0==0) = 0;
 fluence2 = imgaussfilt(fluence2);
 figure;imshow(fluence2,[])
 
+
 Ind = BeamletInd(:,:,beamlist);
 Ind = Ind(Ind>0);
 xf = zeros(numbeamlets,1);
@@ -135,6 +136,38 @@ Anni1selectbeam_corrected = Anni1selectbeam./fluence2;
 Anni1selectbeam_corrected(mask0==0) = 0;
 Anni1selectbeam_corrected(fluence2<max(fluence2(:))*0.2) = 0;
 figure(10);imshow(Anni1selectbeam_corrected,[])
+
+%%
+
+ROIInd = [[80.5 115.5 7 8]
+        [35.5 84.5 4 7]
+        [48.0625 102.3125 4.125 6.25]
+        [68.5 108.5 4 6] 
+    ];
+ROIrow1 = ceil(ROIInd(:,2));
+ROIcolumn1 = ceil(ROIInd(:,1));
+ROIrow2 = floor(ROIInd(:,2))+floor(ROIInd(:,4));
+ROIcolumn2 = floor(ROIInd(:,1))+floor(ROIInd(:,3));
+
+for i = 1
+    for j = 1:size(ROIInd,1)
+        ImgROI = Anni1selectbeam_corrected(ROIrow1(j):ROIrow2(j),ROIcolumn1(j):ROIcolumn2(j),i);
+        if(j==1)
+            imginten0 = mean(ImgROI(:));
+        end
+        ImgROI = ImgROI/imginten0;
+        imginten(j) = mean(ImgROI(:));
+        imgnoise(j) = std(ImgROI(:));
+    end
+end
+
+test = (imginten-imginten(1))/imginten(1)*100;
+figure;scatter([73,79,83],test(2:end))
+
+xlabel('Atomic No')
+ylabel('Increased contrast to water (%)')
+set(gca,'FontSize',15)
+refline
 
 
 %% Identify LOR
@@ -212,11 +245,3 @@ img_direct_corrected = img_direct./fluence2;
 img_direct_corrected(mask0==0)=0;
 figure;imshow([Anni2D_corrected/max(Anni2D_corrected(:)) img_fbp_corrected/max(img_fbp_corrected(:)) img_direct_corrected/max(img_direct_corrected(:))],[0.2,1])
 
-numevent = max(eventIds);
-PP_Dose = reshape(M*ones(size(M,2),1)*numevent,size(StructureInfo(1).Mask));
-figure;imshow3D(PP_Dose,[]);
-
-resultsFolder = fullfile(projectFolder,'results');
-mkdir(resultsFolder)
-save(fullfile(resultsFolder,'Recon_PairProd.mat'),'Anni2D_corrected',...
-    'img_fbp_corrected','img_direct_corrected','PP_Dose','mask0')
