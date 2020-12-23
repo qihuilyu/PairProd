@@ -10,7 +10,7 @@ clc
 projectName = 'PairProd';
 patientName = 'GBMHY_final_100m';
 taglist = {'run01','run02','run03','run04','run05','run06','run07','run08','run09','run10'};
-MergedName = 'run01torun10';
+MergedName = 'run01torun10_detectorefficiency0p1';
 
 M0 = 0;
 M_Anni0 = 0;
@@ -21,19 +21,18 @@ energy0 = [];
 eventIds0 = [];
 globalTimes0 = [];
 CorrectedTime0 = [];
-beamletIDs0 = [];
 deltatime = 10;
 
 for nruns = 1:numel(taglist)
     tag = taglist{nruns};
     
-    patFolder = fullfile('/media/raid1/qlyu/PairProd/datatest',patientName);
+    patFolder = fullfile('/media/raid0/qlyu/PairProd/datatest',patientName);
     projectFolder = fullfile(patFolder,projectName);
     dosematrixFolder = fullfile(projectFolder,'dosematrix');
     
     load(fullfile(dosematrixFolder,[patientName projectName '_M_HighRes_' tag '.mat']),'M','M_Anni','dose_data','masks');
     
-    load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection_' tag '.mat']),...
+    load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection_' tag '_detectorefficiency0p1.mat']),...
         'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','beamletIDs','CorrectedTime','numeventsvec');
     
     if(any(find(sum(M)')-find(numeventsvec)))
@@ -55,7 +54,6 @@ for nruns = 1:numel(taglist)
     detectorIds0 = [detectorIds0;detectorIds];
     beamNo0 = [beamNo0;beamNo];
     beamletNo0 = [beamletNo0;beamletNo];
-    beamletIDs0 = [beamletIDs0;beamletIDs];
     energy0 = [energy0;energy];
     eventIds = eventIds + numeventsvec0(beamletNo);
     eventIds0 = [eventIds0;eventIds];
@@ -82,7 +80,6 @@ load(fullfile(paramsFolder,['StructureInfo' num2str(InfoNum) '.mat']),'Structure
 load(fullfile(dosematrixFolder,[patientName projectName '_dicomimg.mat']),'img','imgres');
 ParamsNum = 0;
 load(fullfile(paramsFolder,['params' num2str(ParamsNum) '.mat']),'params');
-load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'eventrate');
 
 
 %% Save files
@@ -112,7 +109,7 @@ save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection_directme
 
 % save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),...
 %     'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','numeventsvec');
-% 
+% load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'eventrate');
 % beamSizes = squeeze(sum(sum(params.BeamletLog0,1),2));
 % cumsumbeamSizes = cumsum([0; beamSizes]);
 % beamNoshift = cumsumbeamSizes(beamNo);

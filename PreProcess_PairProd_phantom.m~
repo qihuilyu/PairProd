@@ -219,16 +219,13 @@ save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'
 %% Time correction beamlet by beamlet
 eventrate = 2; % ns/event
 
-deltatime_event = rand(numevent,1)*eventrate*2;
+deltatime_event = rand(eventrate,eventrate/5,numevent,1);
 cumsum_eventtime = cumsum(deltatime_event);
 time_perbeamlet = eventrate*numevent + 20;
 
 CorrectedTime = globalTimes + cumsum_eventtime(eventIds)...
-        + (beamletIDs-1)*time_perbeamlet;
+        + beamletIDs*time_perbeamlet;
 [sortedtime, sortInd] = sort(CorrectedTime);
-ImagingTime = max(CorrectedTime)/1e+09;  % s
-save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection_perbeamletdelivery.mat']),...
-    'detectorefficiency','ImagingTime','CorrectedTime','sortedtime','sortInd','numevent','eventrate',...
-    'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','beamletIDs','-v7.3');
+save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection_perbeamletdelivery.mat']),'CorrectedTime','sortedtime','sortInd','numevent','eventrate','detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','beamletIDs','-v7.3');
 
 

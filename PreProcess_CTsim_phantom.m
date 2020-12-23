@@ -1,14 +1,14 @@
 clear
 close all
 clc
-% 
+%
 % t = tic;
 % while toc(t)<7200*3
 %     pause(2)
 % end
 % !('/media/raid1/qlyu/PairProd/datatest/collect_doescalc_pairprod.sh')
 
-patientName = 'phantom_nanoparticles_360beam_50m_thinslice5mm_CTsimNEW_run3';
+patientName = 'phantom_nanoparticles_360beam_10m_thinslice5mm_CTsimNEW_run4';
 projectName = 'CTsim';
 Folder = '/media/raid1/qlyu/PairProd/datatest';
 patFolder = fullfile(Folder,patientName);
@@ -58,7 +58,7 @@ save(fullfile(dosematrixFolder,[patientName projectName '_dicomimg.mat']),'img',
 
 %%
 load(fullfile(Folder,'phantom_nanoparticles_360beam_200m_thinslice5mm_CTsimNEW_blankfield','dosecalc','CTsim_CTprojection.mat'),'CTprojection');
-Projection0 = CTprojection(:,:,1)/4;
+Projection0 = CTprojection(:,:,1);
 
 load(DetectedEventsCTfile,'CTprojection');
 LI = log(permute(repmat(Projection0,[1,1,size(CTprojection,3)]),[2,1,3])./permute(CTprojection,[2,1,3]));
@@ -72,58 +72,31 @@ save(fullfile(dosematrixFolder,'LineIntegrals.mat'),'CTprojection','LI');
 %%
 
 
-	cg = ct_geom('fan', ...
-	'ns', 250, ... % detector channels
-	'nt', 500, ... % detector rows
-	'na', 360, ... % angular samples
-	'offset_s', 0, ... % quarter-detector offset
-	'dsd', 1000, ...
-	'dod', 333.3, ...
-	'dfs', inf, ... % arc
-	'ds', 2, ... % detector pitch
-	'dt', 2, ... % detector row spacing for 0.625mm slices, 2009-12-06
-	'pitch',0,...
+cg = ct_geom('fan', ...
+    'ns', 250, ... % detector channels
+    'nt', 500, ... % detector rows
+    'na', 360, ... % angular samples
+    'offset_s', 0, ... % quarter-detector offset
+    'dsd', 1000, ...
+    'dod', 333.3, ...
+    'dfs', inf, ... % arc
+    'ds', 2, ... % detector pitch
+    'dt', 2, ... % detector row spacing for 0.625mm slices, 2009-12-06
+    'pitch',0,...
     'orbit_start',90);
-	ig = image_geom('nx', size(img,1), 'ny', size(img,2), 'nz', 100, 'fov', size(img,1)*imgres);
-	mask2 = true([ig.nx ig.ny]);
-	mask2(end) = 0; % trick: test it
-	ig.mask = repmat(mask2, [1 1 ig.nz]);
-    li_hat = fdk_filter(LI(126:end-125,:,1:end), 'ramp', cg.dsd, cg.dfs, cg.ds);
-	
-    
-    args = {flip(li_hat,1), cg, ig, 'ia_skip', 1}; % increase 1 for faster debugging
-	CT_FBP = cbct_back(args{:}, 'use_mex', 1, 'back_call', @jf_mex);
-    figure;imshow3D(CT_FBP,[0,0.15])
-    
- resultsFolder = fullfile(projectFolder,'results');
- mkdir(resultsFolder)
- save(fullfile(resultsFolder,'Recon_CT.mat'),'CT_FBP')
-   
-% 	back2 = cbct_back(args{:}, 'use_mex', 1, 'back_call', @fdk_mex);
-% 	max_percent_diff(back1, back2)
-% 	xfdk = feldkamp(cg, ig, li_hat, ...
-% 		'extrapolate_t', ceil(1.3 * cg.nt/2)); % todo: compute carefully
-% 
-% 	pr [ig.nx ig.ny ig.nz ig.dx ig.dy ig.dz]
-% 	pr [cg.ns cg.nt cg.na cg.ds cg.dt]
-% 	printm('image Mbytes %d', ig.nx*ig.ny*ig.nz*4 / 1024^2)
-% 	printm('proj Mbytes %d', cg.ns*cg.nt*cg.na*4 / 1024^2)
-% 
-% 	printm 'ellipse proj' % somewhat realistic phantom object
-% 	ell = [ ...
-% 		[30 10 10	150 150 280	0 0 1000]; % 30cm diam
-% 		[80 10 10	50 50 30	0 0 300]; % bone-like
-% 		[-10 -40 75	40 40 40	0 0 600];
-% 		[-10 80 -20	30 30 30	0 0 600];
-% 	];
-% %	xtrue = ellipsoid_im(ig, ell); im(xtrue); return
-% 
-% 	proj = ellipsoid_proj(cg, ell);
-% 	proj = fdk_filter(proj, 'ramp', cg.dsd, cg.dfs, cg.ds);
-% 	if 0 % zero outer edges of projection for testing
-% 		proj([1 cg.ns], :, :) = 0;
-% 		proj(:, [1 cg.nt], :) = 0;
-% 	end
+ig = image_geom('nx', size(img,1), 'ny', size(img,2), 'nz', 100, 'fov', size(img,1)*imgres);
+mask2 = true([ig.nx ig.ny]);
+mask2(end) = 0; % trick: test it
+ig.mask = repmat(mask2, [1 1 ig.nz]);
+li_hat = fdk_filter(LI(126:end-125,:,1:end), 'ramp', cg.dsd, cg.dfs, cg.ds);
 
+
+args = {flip(li_hat,1), cg, ig, 'ia_skip', 1}; % increase 1 for faster debugging
+CT_FBP = cbct_back(args{:}, 'use_mex', 1, 'back_call', @jf_mex);
+figure;imshow3D(CT_FBP,[0,0.15])
+
+resultsFolder = fullfile(projectFolder,'results');
+mkdir(resultsFolder)
+save(fullfile(resultsFolder,'Recon_CT.mat'),'CT_FBP')
 
 
