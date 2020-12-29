@@ -10,7 +10,7 @@ clc
 projectName = 'PairProd';
 patientName = 'GBMHY_final_100m';
 taglist = {'run01','run02','run03','run04','run05','run06','run07','run08','run09','run10'};
-MergedName = 'run01torun10';
+MergedName = 'run01torun10_1000MUpermin';
 
 M0 = 0;
 M_Anni0 = 0;
@@ -22,19 +22,20 @@ eventIds0 = [];
 globalTimes0 = [];
 CorrectedTime0 = [];
 beamletIDs0 = [];
+ImagingTime0 = 0;
 deltatime = 10;
 
 for nruns = 1:numel(taglist)
     tag = taglist{nruns};
     
-    patFolder = fullfile('/media/raid1/qlyu/PairProd/datatest',patientName);
+    patFolder = fullfile('/media/raid0/qlyu/PairProd/datatest',patientName);
     projectFolder = fullfile(patFolder,projectName);
     dosematrixFolder = fullfile(projectFolder,'dosematrix');
     
     load(fullfile(dosematrixFolder,[patientName projectName '_M_HighRes_' tag '.mat']),'M','M_Anni','dose_data','masks');
     
-    load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection_' tag '.mat']),...
-        'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','beamletIDs','CorrectedTime','numeventsvec');
+    load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection_1000MUpermin_' tag '.mat']),...
+        'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','beamletIDs','ImagingTime','CorrectedTime','numeventsvec');
     
     if(any(find(sum(M)')-find(numeventsvec)))
         error('Simulation error !!!')
@@ -60,7 +61,8 @@ for nruns = 1:numel(taglist)
     eventIds = eventIds + numeventsvec0(beamletNo);
     eventIds0 = [eventIds0;eventIds];
     globalTimes0 = [globalTimes0;globalTimes];
-    CorrectedTime0 = [CorrectedTime0; CorrectedTime + timeshift];    
+    CorrectedTime0 = [CorrectedTime0; CorrectedTime + timeshift]; 
+    ImagingTime0 = ImagingTime0 + ImagingTime;
     numeventsvec0 = numeventsvec0 + numeventsvec;    
 end
 
@@ -75,6 +77,8 @@ eventIds = eventIds0;
 globalTimes = globalTimes0;
 numeventsvec = numeventsvec0;
 CorrectedTime = CorrectedTime0;
+ImagingTime = ImagingTime0;
+beamletIDs = beamletIDs0;
 
 paramsFolder = fullfile(projectFolder,'params');
 InfoNum = 0;
@@ -82,12 +86,11 @@ load(fullfile(paramsFolder,['StructureInfo' num2str(InfoNum) '.mat']),'Structure
 load(fullfile(dosematrixFolder,[patientName projectName '_dicomimg.mat']),'img','imgres');
 ParamsNum = 0;
 load(fullfile(paramsFolder,['params' num2str(ParamsNum) '.mat']),'params');
-load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'eventrate');
 
 
 %% Save files
 patientName = [patientName, '_', MergedName];
-patFolder = fullfile('/media/raid1/qlyu/PairProd/datatest',patientName);
+patFolder = fullfile('/media/raid0/qlyu/PairProd/datatest',patientName);
 projectFolder = fullfile(patFolder,projectName);
 paramsFolder = fullfile(projectFolder,'params');
 dosematrixFolder = fullfile(projectFolder,'dosematrix');
@@ -106,10 +109,10 @@ save(fullfile(dosematrixFolder,[patientName projectName '_M_HighRes.mat']),'M','
 
 
 save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection_directmerge.mat']),...
-    'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','beamletIDs','numeventsvec','CorrectedTime','-v7.3');
+    'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','beamletIDs','ImagingTime','CorrectedTime','numeventsvec','-v7.3');
 
 
-
+% load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'eventrate');
 % save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),...
 %     'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','numeventsvec');
 % 

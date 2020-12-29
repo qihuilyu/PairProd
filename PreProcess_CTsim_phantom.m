@@ -8,7 +8,7 @@ clc
 % end
 % !('/media/raid1/qlyu/PairProd/datatest/collect_doescalc_pairprod.sh')
 
-patientName = 'phantom_nanoparticles_360beam_10m_thinslice5mm_CTsimNEW_run4';
+patientName = 'phantom_DECT_360beam_50m_slice5mm_60kVp_CTsimNEW';  % CTphantom_360beam_200m_thinslice5mm_CTsimNEW 
 projectName = 'CTsim';
 Folder = '/media/raid1/qlyu/PairProd/datatest';
 patFolder = fullfile(Folder,patientName);
