@@ -2,12 +2,12 @@
 % close all
 % clc
 
-patientName = 'GBMHY_final_100m_run01torun10';
+patientName = 'GBMHY_final_100m_run01torun10_1000MUpermin';
 projectName = 'PairProd';
 patFolder = fullfile('D:\datatest\PairProd\',patientName);
 OutputFileName = fullfile('D:\datatest\PairProd\','GBMHY.mat');
-CERR('CERRSLICEVIEWER')
-sliceCallBack_QL('OPENNEWPLANC', OutputFileName);
+% CERR('CERRSLICEVIEWER')
+% sliceCallBack_QL('OPENNEWPLANC', OutputFileName);
 
 projectFolder = fullfile(patFolder,projectName);
 dosecalcFolder = fullfile(patFolder,'dosecalc');
@@ -46,7 +46,7 @@ TruePositive = length(Ind_coin_511)/length(Ind_coin_accept);
 % save(fullfile(dosematrixFolder,[patientName projectName '_detid_pair.mat']),'Ind_coin_511','Ind_coin_accept');
 
 %% Image Reconstruction
-TimeResolution = 0.3; % 400 ps
+TimeResolution = 0.3; % 300 ps
 CorrectedTime_TR = CorrectedTime + TimeResolution*randn(size(CorrectedTime));
 Ind_coin_accept = IdentifyLOR(energy, CorrectedTime_TR, CoincidenceTime, EnergyResolution);
 
@@ -58,6 +58,7 @@ nb_cryst = max(detectorIds);
 detid_pair = detectorIds(Ind_coin_accept);
 [sino, dr, newunidist, sinobuff, unidist] = rebin_PET2(detid_pair, nb_cryst, R1, distrange);
 
+imgres = 4;
 ig = image_geom('nx', size(img,1), 'ny', size(img,2), 'fov', size(img,1)*imgres);
 sg = sino_geom('par', 'nb', size(sino,1), 'na', size(sino,2), 'dr', dr);
 img_fbp_nocorrect = em_fbp_QL(sg, ig, sino);
@@ -116,13 +117,13 @@ yoff = 0.2;
 dose3D(dose3D<0) = 0;
 dose3D = dose3D/mean(dose3D(PTV==1));
 dose3D(BODY==0) = 0;
-planName = 'dose3D';
+planName = [patientName 'dose3D'];
 addDoseToGui_Move_QL(dose3D,[planName],xoff,yoff)
 
 Anni3D(Anni3D<0) = 0;
 Anni3D = Anni3D/mean(Anni3D(PTV==1));
 Anni3D(BODY==0) = 0;
-planName = 'Anni3D';
+planName = [patientName 'Anni3D'];
 addDoseToGui_Move_QL(Anni3D,[planName],xoff,yoff)
 
 
@@ -143,14 +144,14 @@ img_direct(img_direct<0) = 0;
 img_direct = img_direct/mean(img_direct(PTV2D==1));
 img_direct(BODY2D==0) = 0;
 img_direct3D = repmat(img_direct,[1,1,size(Anni3D,3)]);
-planName = 'img_direct';
+planName = [patientName 'img_direct'];
 addDoseToGui_Move_QL(img_direct3D,[planName],xoff,yoff)
 
 img_fbp(img_fbp<0) = 0;
 img_fbp = img_fbp/mean(img_fbp(PTV2D==1));
 img_fbp(BODY2D==0) = 0;
 img_fbp3D = repmat(img_fbp,[1,1,size(Anni3D,3)]);
-planName = 'img_fbp';
+planName = [patientName 'img_fbp'];
 addDoseToGui_Move_QL(img_fbp3D,[planName],xoff,yoff)
 
 %%
@@ -169,19 +170,19 @@ StructureInfo = patInfo(jj).StructureInfo;
 FigureNum = get(gcf,'Number');
 global planC stateS
 patInfo(16).coordInd = [197,197,71];
+patInfo(16).colorbarRange = [0,1.1];
 ChangeCERRdoseWash_QL(patientName,patInfo)
 
 figuresFolder = ['D:\datatest\PairProd\GoodResult\dosewash\'];
 mkdir(figuresFolder)
 figureName = [patientName projectName];
-[EntireImg,Imgs,ImgsInit,Masks] = SaveDoseWash_QL(patInfo, figuresFolder,figureName,[9:12],patientName,FigureNum,ImageSize);
+[EntireImg,Imgs,ImgsInit,Masks] = SaveDoseWash_QL(patInfo, figuresFolder,figureName,[13:16],patientName,FigureNum,ImageSize);
 
 %%
-NewImg = PutImgTogether_VariedSize_Horizontal((Imgs(1:2,[2,5])),0);
-figure;imshow(NewImg)
 
 figure;imshow([[Imgs{1,2} Imgs{1,5}]; [Imgs{2,2} Imgs{2,5}]])
-
+saveas(gcf,fullfile(figuresFolder,'dosewash.png'))
+saveas(gcf,fullfile(figuresFolder,'dosewash.tiff'))
 
 
 

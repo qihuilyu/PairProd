@@ -1,4 +1,4 @@
-function [img_direct, img_ci, img_ciN] = recon_beampathbased(reconparams, detid_pair, src_select, beampathsy_select, varargin)
+function [img_beampath, img_ci, img_ciN] = recon_beampathbased(reconparams, detid_pair, src_select, beampathsy_select, sigma0, varargin)
 
 % a: det1
 % b: det2
@@ -36,24 +36,34 @@ p0(isnan(p0(:,1)),:)=[];
 xp0 = p0(:,1);
 yp0 = p0(:,2);
 
-img_direct = zeros(imgsize(1),imgsize(2));
+img_beampath = zeros(imgsize(1),imgsize(2));
 img_ci = zeros(imgsize(1),imgsize(2));
 img_ciN = zeros(imgsize(1),imgsize(2));
 xImage = ((1:imgsize(1))-(1+imgsize(1))/2)*imgres;
 yImage = ((1:imgsize(2))-(1+imgsize(2))/2)*imgres;
+
+[x,y] = ndgrid(1:imgsize(1),1:imgsize(2));
+sigma = sigma0/imgres;
 
 for ii = 1:length(xp0)
     ixp0 = xp0(ii);
     iyp0 = yp0(ii);
     
     if(ixp0<min(xImage)||ixp0>max(xImage)||iyp0<min(yImage)||iyp0>max(yImage))
-         continue
+        continue
     end
     
     [~,xind] = min(abs(ixp0-xImage));
     [~,yind] = min(abs(iyp0-yImage));
-
-    img_direct(xind,yind) = img_direct(xind,yind) + 1/cilist(ii);
+    
+    if(sigma==0)
+        img_beampath(xind,yind) = img_beampath(xind,yind) + 1/cilist(ii);
+    else
+        exponent = ((x-xind).^2 + (y-yind).^2)./(2*sigma^2);
+        val       = (exp(-exponent));
+        img_beampath = img_beampath + val/cilist(ii);
+    end
+    
     img_ci(xind,yind) = (img_ci(xind,yind)*img_ciN(xind,yind) + cilist(ii))/(img_ciN(xind,yind) + 1);
     img_ciN(xind,yind) = img_ciN(xind,yind) + 1;
 end

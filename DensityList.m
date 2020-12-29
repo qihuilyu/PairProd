@@ -56,5 +56,45 @@ massfraction = 0.05;
 mixturedensity_Bi_05 = compute_mixturedensity([density_Bi,1], [massfraction,1-massfraction]);
 
 
+%% DECT
+density_Ca = 1.55;
+mass_Ca = 0.05; % 50mg/ml
+volume_Ca = mass_Ca/density_Ca;
+massfraction_Ca_50mgpml = mass_Ca/(mass_Ca + 1 - volume_Ca);
+mixturedensity_Ca_50mgpml = compute_mixturedensity([density_Ca,1], [massfraction_Ca_50mgpml,1-massfraction_Ca_50mgpml]);
 
+density_Ca = 1.55;
+mass_Ca = 0.15; % 150mg/ml
+volume_Ca = mass_Ca/density_Ca;
+massfraction_Ca_150mgpml = mass_Ca/(mass_Ca + 1 - volume_Ca);
+mixturedensity_Ca_150mgpml = compute_mixturedensity([density_Ca,1], [massfraction_Ca_150mgpml,1-massfraction_Ca_150mgpml]);
 
+density_Ca = 1.55;
+mass_Ca = 0.3; % 300mg/ml
+volume_Ca = mass_Ca/density_Ca;
+massfraction_Ca_300mgpml = mass_Ca/(mass_Ca + 1 - volume_Ca);
+mixturedensity_Ca_300mgpml = compute_mixturedensity([density_Ca,1], [massfraction_Ca_300mgpml,1-massfraction_Ca_300mgpml]);
+
+density_Io = 4.93;
+mass_Io = 0.005; % 5mg/ml
+volume_Io = mass_Io/density_Io;
+massfraction_Io_5mgpml = mass_Io/(mass_Io + 1 - volume_Io);
+mixturedensity_Io_5mgpml = compute_mixturedensity([density_Io,1], [massfraction_Io_5mgpml,1-massfraction_Io_5mgpml]);
+
+density_Io = 4.93;
+mass_Io = 0.01; % 10mg/ml
+volume_Io = mass_Io/density_Io;
+massfraction_Io_10mgpml = mass_Io/(mass_Io + 1 - volume_Io);
+mixturedensity_Io_10mgpml = compute_mixturedensity([density_Io,1], [massfraction_Io_10mgpml,1-massfraction_Io_10mgpml]);
+
+density_Io = 4.93;
+mass_Io = 0.02; % 20mg/ml
+volume_Io = mass_Io/density_Io;
+massfraction_Io_20mgpml = mass_Io/(mass_Io + 1 - volume_Io);
+mixturedensity_Io_20mgpml = compute_mixturedensity([density_Io,1], [massfraction_Io_20mgpml,1-massfraction_Io_20mgpml]);
+
+density_Io = 4.93;
+mass_Io = 0.05; % 20mg/ml
+volume_Io = mass_Io/density_Io;
+massfraction_Io_50mgpml = mass_Io/(mass_Io + 1 - volume_Io);
+mixturedensity_Io_50mgpml = compute_mixturedensity([density_Io,1], [massfraction_Io_50mgpml,1-massfraction_Io_50mgpml]);

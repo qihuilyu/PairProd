@@ -2,7 +2,7 @@ clear
 close all
 clc
 
-patientName = 'CTphantom_2beam_5mmbeamlet_10m';
+patientName = 'CTphantom_20beam_2mmbeamlet_5m';
 projectName = 'PairProd';
 patFolder = fullfile('D:\datatest\PairProd\',patientName);
 projectFolder = fullfile(patFolder,projectName);
@@ -76,7 +76,7 @@ end
 
 
 %% Compute fluence for limited FOV
-beamletwidth = 5;
+beamletwidth = 2;
 
 fluence = 0*mumap_10MV;
 FOV = size(BeamletLog0,1)*beamletwidth/imgres-1;
@@ -195,6 +195,10 @@ img_fbp = em_fbp_QL(sg, ig, sino./ci);
 
 
 %%
+beamSizes = squeeze(sum(sum(params.BeamletLog0,1),2));
+cumsumbeamSizes = cumsum([0; beamSizes]);
+beamNoshift = cumsumbeamSizes(beamNo);
+beamletIDs = double(beamletNo) + beamNoshift;
 
 beamletpix = beamletwidth/imgres;
 FOV = size(BeamletLog0,1)*beamletwidth;
@@ -233,18 +237,17 @@ end
 %% Beam-path based image generation
 cilist = GetACfactor_list(ci, detid_pair, nb_cryst, R1, distrange, newunidist);
 reconparams = struct('nb_cryst',nb_cryst,'R1',R1,'distrange',distrange,...
-    'imgres',imgres*2,'imgsize',ceil([ig.nx, ig.ny]/2));
+    'imgres',imgres,'imgsize',ceil([ig.nx, ig.ny]));
 
-beamletNo_select = beamletNo(Ind_coin_accept);
-src_select = [srcs(beamletNo_select(:,1),:)];
-beampathsy_select = [beampathsy(beamletNo_select(:,1),:)];
+beamletIDs_select = beamletIDs(Ind_coin_accept);
+src_select = [srcs(beamletIDs_select(:,1),:)];
+beampathsy_select = [beampathsy(beamletIDs_select(:,1),:)];
 
-[img_beampath, img_ci_beampath, img_ciN_beampath] = recon_beampathbased(reconparams, detid_pair, src_select, beampathsy_select, cilist);
-img_beampath_smooth = imgaussfilt(img_beampath); 
-figure;imshow([img_beampath img_beampath_smooth],[])
-img_beampath_corrected = img_beampath./fluence2;
-img_beampath_corrected(mask0==0)=0;
-figure;imshow([img_beampath img_beampath_smooth],[])
+sigma0 = 2;
+[img_beampath, img_ci_beampath, img_ciN_beampath] = recon_beampathbased(reconparams, detid_pair, src_select, beampathsy_select, sigma0, cilist);
+figure;imshow([img_beampath],[])
+% img_beampath_smooth = imgaussfilt(img_beampath); 
+% figure;imshow([img_beampath img_beampath_smooth],[])
 
 
 
@@ -267,5 +270,12 @@ img_fbp_corrected = img_fbp./fluence2;
 img_fbp_corrected(mask0==0)=0;
 img_direct_corrected = img_direct./fluence2;
 img_direct_corrected(mask0==0)=0;
-figure;imshow([Anni2D_corrected/max(Anni2D_corrected(:)) img_fbp_corrected/max(img_fbp_corrected(:)) img_beampath/max(img_beampath(:)) img_direct_corrected/max(img_direct_corrected(:))],[0.2,1])
-
+img_beampath_corrected = img_beampath./fluence2;
+img_beampath_corrected(mask0==0)=0;
+figure;imshow([Anni2D_corrected],[])
+figure;imshow([Anni2D],[])
+figure;imshow([Anni2D_corrected/max(Anni2D_corrected(:)) img_fbp_corrected/max(img_fbp_corrected(:)) img_beampath_corrected/max(img_beampath_corrected(:)) img_direct_corrected/max(img_direct_corrected(:))],[0.2,1])
+figure;imshow([[Anni2D_corrected/max(Anni2D_corrected(:)) img_fbp_corrected/max(img_fbp_corrected(:)) img_beampath_corrected/max(img_beampath_corrected(:)) img_direct_corrected/max(img_direct_corrected(:))];...
+    [Anni2D/max(Anni2D(:)) img_fbp/max(img_fbp(:)) img_beampath/max(img_beampath(:)) img_direct/max(img_direct(:))]],[0.2,1])
+save(fullfile(resultFolder,'Recon_pairprod.mat'),'Anni2D','img_fbp','img_direct',...
+    'img_beampath','fluence2','Anni2D_corrected','img_fbp_corrected','img_beampath_corrected','img_direct_corrected','fluence2')
