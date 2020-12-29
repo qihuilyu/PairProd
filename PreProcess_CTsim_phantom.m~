@@ -93,11 +93,11 @@ li_hat = fdk_filter(LI(126:end-125,:,1:end), 'ramp', cg.dsd, cg.dfs, cg.ds);
 
 args = {flip(li_hat,1), cg, ig, 'ia_skip', 1}; % increase 1 for faster debugging
 CT_FBP = cbct_back(args{:}, 'use_mex', 1, 'back_call', @jf_mex);
+figure;imshow3D(CT_FBP,[0,0.15])
+saveas(gcf, fullfile(resultFolder,'Recon_pairprod.png'))
 
 resultsFolder = fullfile(projectFolder,'results');
 mkdir(resultsFolder)
 save(fullfile(resultsFolder,'Recon_CT.mat'),'CT_FBP')
 
-figure;imshow3D(CT_FBP,[0,0.15])
-saveas(gcf, fullfile(resultsFolder,'CT_FBP.png'))
 

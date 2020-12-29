@@ -8,8 +8,8 @@ patFolder = fullfile('D:\datatest\PairProd\',patientName);
 projectFolder = fullfile(patFolder,projectName);
 dosecalcFolder = fullfile(patFolder,'dosecalc');
 dosematrixFolder = fullfile(projectFolder,'dosematrix');
-resultFolder = fullfile(projectFolder,'results');
-mkdir(resultFolder)
+resultsFolder = fullfile(projectFolder,'results');
+mkdir(resultsFolder)
 
 load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection_perbeamletdelivery.mat']),...
     'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','CorrectedTime','sortedtime','sortInd');
@@ -74,7 +74,7 @@ for BeamNo = 1:numbeams
     img_fluence_filled(:,:,BeamNo) = inpaint_nans(img_fluence);
     figure(8);imshow(img_fluence_filled(:,:,BeamNo),[])
 end
-save(fullfile(resultFolder,'img_fluence_filled.mat'),'img_fluence_filled');
+save(fullfile(resultsFolder,'img_fluence_filled.mat'),'img_fluence_filled');
 
 %% Compute fluence for limited FOV
 beamletwidth = 2;
@@ -280,14 +280,14 @@ figure;imshow([Anni2D],[])
 figure;imshow([Anni2D_corrected/max(Anni2D_corrected(:)) img_fbp_corrected/max(img_fbp_corrected(:)) img_beampath_corrected/max(img_beampath_corrected(:)) img_direct_corrected/max(img_direct_corrected(:))],[0.2,1])
 figure;imshow([[Anni2D_corrected/max(Anni2D_corrected(:)) img_fbp_corrected/max(img_fbp_corrected(:)) img_beampath_corrected/max(img_beampath_corrected(:)) img_direct_corrected/max(img_direct_corrected(:))];...
     [Anni2D/max(Anni2D(:)) img_fbp/max(img_fbp(:)) img_beampath/max(img_beampath(:)) img_direct/max(img_direct(:))]],[0.2,1])
-saveas(gcf, fullfile(resultFolder,'Recon_pairprod.png'))
+saveas(gcf, fullfile(resultsFolder,'Recon_pairprod.png'))
 
-save(fullfile(resultFolder,'Recon_pairprod.mat'),'Anni2D','img_fbp','img_direct',...
+save(fullfile(resultsFolder,'Recon_pairprod.mat'),'Anni2D','img_fbp','img_direct',...
     'img_beampath','fluence2','Anni2D_corrected','img_fbp_corrected','img_beampath_corrected','img_direct_corrected','fluence2');
 
 figure;imagesc(dose2D); colormap(jet); colorbar
 axis off
 axis equal
-saveas(gcf, fullfile(resultFolder,'Dose_pairprod.png'))
+saveas(gcf, fullfile(resultsFolder,'Dose_pairprod.png'))
 
 
