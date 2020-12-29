@@ -116,7 +116,8 @@ for ii = 1:length(StructureInfo)
 end
 
 xPolish = result.xPolish;
-ds = 25/2*10; nruns = 10; thresh = 1;
+ds = 25/2*10; % 2Gy per fraction; 10% detector efficiency
+nruns = 10;
 % xPolish(xPolish<thresh*ds) = thresh*ds;
 fileID = fopen(fullfile(patFolder, 'dosecalc', [patientName '_nruns_' num2str(nruns) '.txt']),'w');
 fprintf(fileID,'%d \n',ceil(xPolish/ds/nruns));
