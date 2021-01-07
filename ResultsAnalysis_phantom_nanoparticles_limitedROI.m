@@ -1,5 +1,4 @@
-load('D:\datatest\PairProd\phantom_nanoparticles_2mmbeamlet_25m\PairProd\results\Recon_pairprod.mat')
-load('D:\datatest\PairProd\phantom_nanoparticles_360beam_460m_merged\CTsim\results\Recon_CT.mat')
+load('D:\datatest\PairProd\phantom_nanoparticles_LimitedROI_2mmbeamlet_230m\PairProd\results\Recon_pairprod.mat')
 
 i = 1;
 ImgInfo(i).Img_raw = Anni2D.*mask0;
@@ -21,29 +20,17 @@ ImgInfo(i).Img_raw = img_direct.*mask0;
 ImgInfo(i).Img_corrected = img_direct_corrected.*mask0;
 ImgInfo(i).ImgNorMax = ImgInfo(i).Img_raw/max(ImgInfo(i).Img_raw(:));
 ImgInfo(i).Method = 'PPI reconstruction-less';
-i = i+1;
-ImgInfo(i).Img_raw = CT_FBP(:,:,end/2).*mask0;
-ImgInfo(i).Img_corrected = CT_FBP(:,:,end/2).*mask0;
-ImgInfo(i).ImgNorMax = ImgInfo(i).Img_raw/max(ImgInfo(i).Img_raw(:));
-ImgInfo(i).Method = 'CT FBP';
 
-figure;imshow([ImgInfo.ImgNorMax])
+figure;imshow([ImgInfo.Img_corrected],[])
+
 
 %%
 
 ROIInd = [
-        [89.5 102.5 5 5]  % 1
-        [102.5 85.5 5 5]  % 2
-        [102.5 63.5 5 5]  % 3
-        [89.5 46.5 5 5]  % 4
-        [68.5 39.5 5 5]  % 5
-        [48.5 46.5 5 5]  % 6
-        [35.5 63.5 5 5]  % 7
-        [35.5 85.5 5 5]  % 8
-        [47.5 102.5 5 5]  % 9
-        [68.5 109.5 5 5]  % 10
-%         [54.5 58.5 35 35]
-        [81.5000  112.5000   13.0000    9.0000]
+        [53.5 60.5 5 5]  % 8
+        [65.5 77.5 5 5]  % 9
+        [86.5 84.5 5 5]  % 10
+        [99.5 87.5 13 9]
     ]; 
 
 ROIrow1 = ceil(ROIInd(:,2));
@@ -53,10 +40,12 @@ ROIcolumn2 = floor(ROIInd(:,1))+floor(ROIInd(:,3));
 
 for i = 1:numel(ImgInfo)
     Img = ImgInfo(i).Img_corrected;
-    
+%     ind1 = -25; ind2 = 18;
+%     Img = TranslateFigure(Img,-ind1,-ind2);
+
     j = size(ROIInd,1);
     ImgROI = Img(ROIrow1(j):ROIrow2(j),ROIcolumn1(j):ROIcolumn2(j));
-    imginten0 = mean(ImgROI(:));
+    imginten0 = mean(ImgROI(:))
     
     for j = 1:size(ROIInd,1)
         ImgROI = Img(ROIrow1(j):ROIrow2(j),ROIcolumn1(j):ROIcolumn2(j));
@@ -67,13 +56,13 @@ for i = 1:numel(ImgInfo)
     end
 end
 
-figure;imshow([ImgInfo.ImgNor],[0.2 2.7])
+figure;imshow([ImgInfo.ImgNor],[0.2 2.7]); colorbar
 
 
 %%
-waterind = 11;
+waterind = 4;
 Contrast = (imginten-imginten(:,waterind))./repmat(imginten(:,waterind),[1,size(imginten,2)])*100;
-AtomicNum = [53,56,64,70,73,79,83];
+AtomicNum = [73,79,83];
 MarkerSize = 50;
 LineWidth = 2;
 % yyaxis right;
@@ -81,8 +70,8 @@ LineWidth = 2;
 % ylabel('Increased contrast to water (%), CT')
 % legend({'CT'})
 NumSamples = size(Contrast,2)-1;
-xsample = 4:10;
-selectedmethod = [1,2,3,4,5];
+xsample = 1:3;
+selectedmethod = [1,2,3,4];
 figure; 
 for method = selectedmethod
     scatter(AtomicNum,Contrast(method,xsample),MarkerSize,'o','filled'); hold on;
@@ -92,8 +81,8 @@ ylabel('Increased contrast to water (%)')
 legend({ImgInfo(selectedmethod).Method})
 xlabel('Atomic No')
 set(gca,'FontSize',15)
-saveas(gcf,'D:\datatest\PairProd\GoodResult\nanoparticle_linearrelationship.png');
-saveas(gcf,'D:\datatest\PairProd\GoodResult\nanoparticle_linearrelationship.pdf');
+saveas(gcf,'D:\datatest\PairProd\GoodResult\nanoparticle_limitedFOV_linearrelationship.png');
+saveas(gcf,'D:\datatest\PairProd\GoodResult\nanoparticle_limitedFOV_linearrelationship.pdf');
 
 
 
@@ -125,10 +114,10 @@ saveas(gcf,'D:\datatest\PairProd\GoodResult\nanoparticle_linearrelationship.pdf'
 %%
 
 
-figure;imagesc([PP_Dose],[0,0.035]); colorbar; colormap(jet)
+figure;imagesc(PP_Dose,[0,0.033]); colorbar; colormap(jet)
 axis off
 axis equal
-saveas(gcf, 'D:\datatest\PairProd\GoodResult\nanoparticle_Dose_all.png')
+saveas(gcf, 'D:\datatest\PairProd\GoodResult\nanoparticleLimitedFOV_Dose_all.png')
 
 
 

@@ -1,6 +1,5 @@
-load('D:\datatest\PairProd\phantom_nanoparticles_2mmbeamlet_25m\PairProd\results\Recon_pairprod.mat')
-load('D:\datatest\PairProd\phantom_nanoparticles_360beam_460m_merged\CTsim\results\Recon_CT.mat')
-
+load('D:\datatest\PairProd\CTphantom_20beam_2mmbeamlet_25m\PairProd\results\Recon_pairprod.mat')
+load('D:\datatest\PairProd\CTphantom_360beam_200m_thinslice5mm_CTsimNEW\CTsim\results\Recon_CT.mat')
 i = 1;
 ImgInfo(i).Img_raw = Anni2D.*mask0;
 ImgInfo(i).Img_corrected = Anni2D_corrected.*mask0;
@@ -42,8 +41,7 @@ ROIInd = [
         [35.5 85.5 5 5]  % 8
         [47.5 102.5 5 5]  % 9
         [68.5 109.5 5 5]  % 10
-%         [54.5 58.5 35 35]
-        [81.5000  112.5000   13.0000    9.0000]
+        [54.5 58.5 35 35]
     ]; 
 
 ROIrow1 = ceil(ROIInd(:,2));
@@ -67,13 +65,13 @@ for i = 1:numel(ImgInfo)
     end
 end
 
-figure;imshow([ImgInfo.ImgNor],[0.2 2.7])
+figure;imshow([ImgInfo.ImgNor],[])
+figure;imshow([ImgInfo.ImgNor],[0.2 2])
 
 
 %%
-waterind = 11;
+waterind = 6;
 Contrast = (imginten-imginten(:,waterind))./repmat(imginten(:,waterind),[1,size(imginten,2)])*100;
-AtomicNum = [53,56,64,70,73,79,83];
 MarkerSize = 50;
 LineWidth = 2;
 % yyaxis right;
@@ -81,22 +79,18 @@ LineWidth = 2;
 % ylabel('Increased contrast to water (%), CT')
 % legend({'CT'})
 NumSamples = size(Contrast,2)-1;
-xsample = 4:10;
-selectedmethod = [1,2,3,4,5];
+xsample = 1:NumSamples;
+selectedmethod = 1:5;
 figure; 
 for method = selectedmethod
-    scatter(AtomicNum,Contrast(method,xsample),MarkerSize,'o','filled'); hold on;
+    scatter(xsample,Contrast(method,xsample),MarkerSize,'o','filled'); hold on;
 end
-refline;
 ylabel('Increased contrast to water (%)')
 legend({ImgInfo(selectedmethod).Method})
-xlabel('Atomic No')
+xlabel('materials')
 set(gca,'FontSize',15)
-saveas(gcf,'D:\datatest\PairProd\GoodResult\nanoparticle_linearrelationship.png');
-saveas(gcf,'D:\datatest\PairProd\GoodResult\nanoparticle_linearrelationship.pdf');
-
-
-
+saveas(gcf,'D:\datatest\PairProd\GoodResult\CTphantom_contrastplot.png');
+saveas(gcf,'D:\datatest\PairProd\GoodResult\CTphantom_contrastplot.pdf');
 
 % scatter(xsample,Contrast(1,xsample),MarkerSize,'o','filled'); hold on;
 % scatter(xsample,Contrast(2,xsample),MarkerSize,'+','LineWidth',LineWidth);  hold on;
@@ -125,10 +119,7 @@ saveas(gcf,'D:\datatest\PairProd\GoodResult\nanoparticle_linearrelationship.pdf'
 %%
 
 
-figure;imagesc([PP_Dose],[0,0.035]); colorbar; colormap(jet)
-axis off
-axis equal
-saveas(gcf, 'D:\datatest\PairProd\GoodResult\nanoparticle_Dose_all.png')
+figure;imagesc([CT_Dose(:,:,end/2) PP_Dose(:,:,end/2)*10]); colorbar; colormap(jet)
 
 
 
