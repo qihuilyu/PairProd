@@ -1,4 +1,4 @@
-function img_fluence= ComputeFluence(mumap_10MV, src, tardir, iso, imgres)
+function img_fluence= ComputeFluence_old(mumap_10MV, src, tardir, iso, imgres)
 
 resolution.x = imgres;
 resolution.y = imgres;
@@ -19,9 +19,9 @@ for ib = -FOV:FOV
     imgl = 0*mumap_10MV;
     imgl(ix) = l;
     imglmu = imgl.*mumap_10MV;
-        
+    
     attenbuff = exp(-cumsum([0,imglmu(ix)]));
-    img_fluence(ix) = attenbuff(1:end-1)./(alphas(1:end-1)*2).^2;
+    img_fluence(ix) = attenbuff(1:end-1);
     if mod(count,5)==0
         figure(5);imshow(imglmu,[])
         figure(7);imshow(img_fluence,[])

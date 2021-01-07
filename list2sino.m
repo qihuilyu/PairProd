@@ -11,13 +11,14 @@ dist = round(sqrt(sum(pC.^2,2)),4);
 
 p1_p2 = p1 - p2;
 xdy = p1_p2(:,1)./p1_p2(:,2);
-ang = mod(round(atan(xdy),4),3.1416);
+ang = mod(atan(xdy),pi);
 
 gooddetind = find((~isnan(ang)) & dist<distrange);
 ang = ang(gooddetind);
 dist = dist(gooddetind);
 pC = pC(gooddetind,:);
-[uniang, ~, indang] = unique(ang);
+uniang = (0:numdet-1)/numdet*pi;
+indang = mod(round(ang/(pi/numdet)),numdet)+1;
 
 xC = pC(:,1);
 yC = pC(:,2);

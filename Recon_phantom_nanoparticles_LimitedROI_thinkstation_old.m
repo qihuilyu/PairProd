@@ -2,7 +2,7 @@ clear
 close all
 clc
 
-patientName = 'CTphantom_20beam_2mmbeamlet_5m';
+patientName = 'phantom_nanoparticles_LimitedROI_merged';
 projectName = 'PairProd';
 patFolder = fullfile('D:\datatest\PairProd\',patientName);
 projectFolder = fullfile(patFolder,projectName);
@@ -11,7 +11,7 @@ dosematrixFolder = fullfile(projectFolder,'dosematrix');
 resultFolder = fullfile(projectFolder,'results');
 mkdir(resultFolder)
 
-load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection_perbeamletdelivery.mat']),'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','CorrectedTime','sortedtime','sortInd');
+load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','CorrectedTime','sortedtime','sortInd');
 load(fullfile(dosematrixFolder,[patientName projectName '_M_HighRes.mat']),'M','M_Anni','dose_data','masks');
 load(fullfile(dosematrixFolder,[patientName projectName '_dicomimg.mat']),'img','imgres');
 
@@ -32,7 +32,7 @@ x_CT = img(:,:,end+1-slicenum)-1000;
 
 %%
 numevents = max(eventIds);
-numevents = numevents + 99 - mod(numevents-1,100);
+numevents = numevents + 100 - mod(numevents,100);
 
 Anni3D = reshape(full(sum(M_Anni,2)),size(masks{1}.mask));
 Anni2D = Anni3D(:,:,slicenum);
@@ -76,11 +76,11 @@ end
 
 
 %% Compute fluence for limited FOV
-beamletwidth = 2;
 
 fluence = 0*mumap_10MV;
-FOV = size(BeamletLog0,1)*beamletwidth/imgres-1;
+FOV = size(BeamletLog0,1)*15/imgres-1;
 beamlist = 1:numbeams;
+maskfluence = ones(nx,ny);
 for BeamNo = beamlist
     theta = mod(-beamangles(BeamNo) + 3.1436,2*pi);
     src = 1000*[cos(theta) sin(theta) 0] + iso;
@@ -105,6 +105,7 @@ for BeamNo = beamlist
     if(nnz(maskbeam)>1e+04 && FOV<50)
         maskbeam = (sign1.*sign2>0)';
     end
+    maskfluence = maskfluence.*maskbeam;
 %     figure;imshow([dose1beam/max(dose1beam(:)) maskbeam])
 %     C = imfuse(dose1beam/max(dose1beam(:)),maskbeam,'falsecolor','Scaling','joint','ColorChannels',[1 2 0]);
 %     figure(49);imshow(C)
@@ -113,6 +114,7 @@ for BeamNo = beamlist
     fluence = fluence + img_fluence_filled(:,:,BeamNo).*maskbeam;
     figure(9);imshow(fluence,[])
 end
+maskfluence = maskfluence.*mask0;
 
 fluence2 = fluence;
 fluence2(mask0==0) = 0;
@@ -135,8 +137,40 @@ figure;imshow(Anni1selectbeam,[])
 
 Anni1selectbeam_corrected = Anni1selectbeam./fluence2;
 Anni1selectbeam_corrected(mask0==0) = 0;
-Anni1selectbeam_corrected(fluence2<max(fluence2(:))*0.2) = 0;
+Anni1selectbeam_corrected(fluence2<max(fluence2(:))*0.5) = 0;
 figure(10);imshow(Anni1selectbeam_corrected,[])
+
+%%
+
+ROIInd = [[80.5 115.5 7 8]
+        [35.5 84.5 4 7]
+        [48.0625 102.3125 4.125 6.25]
+        [68.5 108.5 4 6] 
+    ];
+ROIrow1 = ceil(ROIInd(:,2));
+ROIcolumn1 = ceil(ROIInd(:,1));
+ROIrow2 = floor(ROIInd(:,2))+floor(ROIInd(:,4));
+ROIcolumn2 = floor(ROIInd(:,1))+floor(ROIInd(:,3));
+
+for i = 1
+    for j = 1:size(ROIInd,1)
+        ImgROI = Anni1selectbeam_corrected(ROIrow1(j):ROIrow2(j),ROIcolumn1(j):ROIcolumn2(j),i);
+        if(j==1)
+            imginten0 = mean(ImgROI(:));
+        end
+        ImgROI = ImgROI/imginten0;
+        imginten(j) = mean(ImgROI(:));
+        imgnoise(j) = std(ImgROI(:));
+    end
+end
+
+test = (imginten-imginten(1))/imginten(1)*100;
+figure;scatter([73,79,83],test(2:end))
+
+xlabel('Atomic No')
+ylabel('Increased contrast to water (%)')
+set(gca,'FontSize',15)
+refline
 
 
 %% Identify LOR
@@ -150,7 +184,7 @@ TruePositive = length(Ind_coin_511)/length(Ind_coin_accept);
 % save(fullfile(dosematrixFolder,[patientName projectName '_detid_pair.mat']),'Ind_coin_511','Ind_coin_accept');
 
 %% Image Reconstruction
-TimeResolution = 0.4; % 400 ps
+TimeResolution = 0.3; % 400 ps
 CorrectedTime_TR = CorrectedTime + TimeResolution*randn(size(CorrectedTime));
 Ind_coin_accept = IdentifyLOR(energy, CorrectedTime_TR, CoincidenceTime, EnergyResolution);
 
@@ -171,21 +205,38 @@ dose3D = reshape(full(sum(M,2)),size(masks{1}.mask));
 dose2D = dose3D(:,:,slicenum);
 figure;imshow(dose2D,[])
 
-ind1 = 1; ind2 = 0;
+% CenterOfMass(1) - (nx+1)/2 
+% CenterOfMass(2) - (ny+1)/2 
+ind1 = -25; ind2 = 18;
 Anni2D = Anni3D(:,:,slicenum);
 Anni2Dold = Anni2D;
 Anni2D = 0*Anni2D;
-Anni2D(ind1+1:end,ind2+1:end) = Anni2Dold(1:end-ind1,1:end-ind2 );
-% Anni2D(1:end+ind1,ind2+1:end) = Anni2Dold(-ind1+1:end,1:end-ind2 );
+% Anni2D(ind1+1:end,ind2+1:end) = Anni2Dold(1:end-ind1,1:end-ind2 );
+Anni2D(1:end+ind1,ind2+1:end) = Anni2Dold(-ind1+1:end,1:end-ind2 );
 % figure;imshow([Anni2D/max(Anni2D(:)),img_fbp_nocorrect/max(img_fbp_nocorrect(:))],[])
 C = imfuse(Anni2D/max(Anni2D(:)),img_fbp_nocorrect/max(img_fbp_nocorrect(:)),'falsecolor','Scaling','joint','ColorChannels',[1 2 0]);
 figure; imshow(C)
 
 mumapold = mumap;
 mumapnew = 0*mumap;
-mumapnew(ind1+1:end,ind2+1:end) = mumapold(1:end-ind1,1:end-ind2 );
+% mumap(ind1+1:end,ind2+1:end) = mumapold(1:end-ind1,1:end-ind2 );
 % mumap(1:end-ind1,ind2+1:end) = mumapold(ind1+1:end,1:end-ind2 );
+mumapnew(1:end+ind1,ind2+1:end) = mumapold(-ind1+1:end,1:end-ind2 );
 figure;imshow(mumapnew,[])
+
+fluence2old = fluence2;
+fluence2new = 0*fluence2;
+% mumap(ind1+1:end,ind2+1:end) = mumapold(1:end-ind1,1:end-ind2 );
+% mumap(1:end-ind1,ind2+1:end) = mumapold(ind1+1:end,1:end-ind2 );
+fluence2new(1:end+ind1,ind2+1:end) = fluence2old(-ind1+1:end,1:end-ind2 );
+figure;imshow(fluence2new,[])
+
+maskfluenceold = maskfluence;
+maskfluencenew = 0*maskfluence;
+% mumap(ind1+1:end,ind2+1:end) = mumapold(1:end-ind1,1:end-ind2 );
+% mumap(1:end-ind1,ind2+1:end) = mumapold(ind1+1:end,1:end-ind2 );
+maskfluencenew(1:end+ind1,ind2+1:end) = maskfluenceold(-ind1+1:end,1:end-ind2 );
+figure;imshow(maskfluencenew,[])
 
 G = Gtomo2_strip(sg, ig);
 % ci = GetACfactor_sino(G, mumap);
@@ -193,89 +244,26 @@ li = G * mumapnew;
 ci = exp(-li);
 img_fbp = em_fbp_QL(sg, ig, sino./ci);
 
-
-%%
-beamSizes = squeeze(sum(sum(params.BeamletLog0,1),2));
-cumsumbeamSizes = cumsum([0; beamSizes]);
-beamNoshift = cumsumbeamSizes(beamNo);
-beamletIDs = double(beamletNo) + beamNoshift;
-
-beamletpix = beamletwidth/imgres;
-FOV = size(BeamletLog0,1)*beamletwidth;
-beamletlist = 1:numbeamlets;
-for iBeamlet = beamletlist
-    [xlet,ylet,BeamNo] = ind2sub(size(BeamletInd),find(BeamletInd==iBeamlet));
-    theta = mod(-beamangles(BeamNo) + 3.1436,2*pi);
-    src = 1000*[cos(theta) sin(theta) 0] + iso;    
-    
-    srcs(iBeamlet,:) = src - iso;
-    beampathsy(iBeamlet,:) = (FOV/2-(xlet-1/2)*beamletwidth)*[-sin(theta) cos(theta) 0];
-    
-%     xf = zeros(numbeamlets,1);
-%     xf(BeamletNo) = numevents;
-%     dose1beam3D = reshape(full(M*xf),size(masks{1}.mask));
-%     dose1beam = dose1beam3D(:,:,slicenum);
-%     Anni1beam3D = reshape(full(M_Anni*xf),size(masks{1}.mask));
-%     Anni1beam = Anni1beam3D(:,:,slicenum);
-       
-%     upperlim = (FOV/2-(xlet-1)*beamletwidth)*[-sin(theta) cos(theta) 0] + iso;
-%     lowerlim = (FOV/2-(xlet)*beamletwidth)*[-sin(theta) cos(theta) 0] + iso;
-%     
-%     [y,x] = ndgrid((1:ny)*imgres,(1:nx)*imgres);
-%     sign1 = sign(y-src(2)-(upperlim(2) - src(2))/(upperlim(1) - src(1))*((x - src(1))));
-%     sign2 = sign(y-src(2)-(lowerlim(2) - src(2))/(lowerlim(1) - src(1))*((x - src(1))));
-%     maskbeam = (sign1.*sign2<=0)';
-%     if(nnz(maskbeam)>1e+04 && FOV<50)
-%         maskbeam = (sign1.*sign2>0)';
-%     end
-%     figure(100);imshow([dose1beam/max(dose1beam(:)) maskbeam])
-%     C = imfuse(dose1beam/max(dose1beam(:)),maskbeam,'falsecolor','Scaling','joint','ColorChannels',[1 2 0]);
-%     figure(49);imshow(C)
-
-end
-
-%% Beam-path based image generation
-cilist = GetACfactor_list(ci, detid_pair, nb_cryst, R1, distrange, newunidist);
-reconparams = struct('nb_cryst',nb_cryst,'R1',R1,'distrange',distrange,...
-    'imgres',imgres,'imgsize',ceil([ig.nx, ig.ny]));
-
-beamletIDs_select = beamletIDs(Ind_coin_accept);
-src_select = [srcs(beamletIDs_select(:,1),:)];
-beampathsy_select = [beampathsy(beamletIDs_select(:,1),:)];
-
-sigma0 = 2;
-[img_beampath, img_ci_beampath, img_ciN_beampath] = recon_beampathbased(reconparams, detid_pair, src_select, beampathsy_select, sigma0, cilist);
-figure;imshow([img_beampath],[])
-% img_beampath_smooth = imgaussfilt(img_beampath); 
-% figure;imshow([img_beampath img_beampath_smooth],[])
-
-
-
 %% Reconstruction-less image generation
 TimeResolution = 0.02; % 20 ps
 CorrectedTime_TR = CorrectedTime + TimeResolution*randn(size(CorrectedTime));
 Ind_coin_accept = IdentifyLOR(energy, CorrectedTime_TR, CoincidenceTime, EnergyResolution);
-
 detid_pair = detectorIds(Ind_coin_accept);
+
 cilist = GetACfactor_list(ci, detid_pair, nb_cryst, R1, distrange, newunidist);
 reconparams = struct('nb_cryst',nb_cryst,'R1',R1,'distrange',distrange,...
     'imgres',imgres,'imgsize',[ig.nx, ig.ny]);
 deltat = CorrectedTime_TR(Ind_coin_accept(:,1)) - CorrectedTime_TR(Ind_coin_accept(:,2));
 [img_direct, img_ci, img_ciN] = recon_TOF_direct(reconparams, detid_pair, deltat, cilist);
 % [img_direct, img_ci, img_ciN] = recon_TOF_direct(reconparams, detid_pair, deltat, cilist./cilist);
-figure;imshow([Anni2D/max(Anni2D(:)) img_fbp/max(img_fbp(:)) img_direct/max(img_direct(:))],[0.2,1])
-Anni2D_corrected = Anni2D./fluence2;
-Anni2D_corrected(mask0==0)=0;
-img_fbp_corrected = img_fbp./fluence2;
-img_fbp_corrected(mask0==0)=0;
-img_direct_corrected = img_direct./fluence2;
-img_direct_corrected(mask0==0)=0;
-img_beampath_corrected = img_beampath./fluence2;
-img_beampath_corrected(mask0==0)=0;
-figure;imshow([Anni2D_corrected],[])
-figure;imshow([Anni2D],[])
-figure;imshow([Anni2D_corrected/max(Anni2D_corrected(:)) img_fbp_corrected/max(img_fbp_corrected(:)) img_beampath_corrected/max(img_beampath_corrected(:)) img_direct_corrected/max(img_direct_corrected(:))],[0.2,1])
-figure;imshow([[Anni2D_corrected/max(Anni2D_corrected(:)) img_fbp_corrected/max(img_fbp_corrected(:)) img_beampath_corrected/max(img_beampath_corrected(:)) img_direct_corrected/max(img_direct_corrected(:))];...
-    [Anni2D/max(Anni2D(:)) img_fbp/max(img_fbp(:)) img_beampath/max(img_beampath(:)) img_direct/max(img_direct(:))]],[0.2,1])
-save(fullfile(resultFolder,'Recon_pairprod.mat'),'Anni2D','img_fbp','img_direct',...
-    'img_beampath','fluence2','Anni2D_corrected','img_fbp_corrected','img_beampath_corrected','img_direct_corrected','fluence2')
+figure;imshow([Anni2D/max(Anni2D(:)) img_fbp/max(img_fbp(:)) img_direct/max(img_direct(:))],[0.4,1])
+maskfluence = imerode(maskfluence,ones(3,3));
+figure;imshow(maskfluencenew)
+Anni2D_corrected = Anni2D./fluence2new;
+Anni2D_corrected(maskfluencenew==0)=0;
+img_fbp_corrected = img_fbp./fluence2new;
+img_fbp_corrected(maskfluencenew==0)=0;
+img_direct_corrected = img_direct./fluence2new;
+img_direct_corrected(maskfluencenew==0)=0;
+figure;imshow([Anni2D_corrected/max(Anni2D_corrected(:)) img_fbp_corrected/max(img_fbp_corrected(:)) img_direct_corrected/max(img_direct_corrected(:))],[0.4,1])
+

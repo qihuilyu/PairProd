@@ -1,6 +1,5 @@
-load('D:\datatest\PairProd\phantom_nanoparticles_2mmbeamlet_25m\PairProd\results\Recon_pairprod.mat')
+load('D:\datatest\PairProd\phantom_nanoparticles_2mmbeamlet_5m\PairProd\results\Recon_pairprod.mat')
 load('D:\datatest\PairProd\phantom_nanoparticles_360beam_460m_merged\CTsim\results\Recon_CT.mat')
-
 i = 1;
 ImgInfo(i).Img_raw = Anni2D.*mask0;
 ImgInfo(i).Img_corrected = Anni2D_corrected.*mask0;
@@ -29,21 +28,18 @@ ImgInfo(i).Method = 'CT FBP';
 
 figure;imshow([ImgInfo.ImgNorMax])
 
+
 %%
 
-ROIInd = [
-        [89.5 102.5 5 5]  % 1
-        [102.5 85.5 5 5]  % 2
-        [102.5 63.5 5 5]  % 3
-        [89.5 46.5 5 5]  % 4
-        [68.5 39.5 5 5]  % 5
-        [48.5 46.5 5 5]  % 6
-        [35.5 63.5 5 5]  % 7
-        [35.5 85.5 5 5]  % 8
-        [47.5 102.5 5 5]  % 9
-        [68.5 109.5 5 5]  % 10
-%         [54.5 58.5 35 35]
-        [81.5000  112.5000   13.0000    9.0000]
+ROIInd = [[99.1875 82.5625 8.00000000000001 7.87499999999999]
+        [102.5 63.5 5 5]
+        [89.5 46.5 5 5]
+        [68.5 39.5 5 5]
+        [48.5 46.5 4 5]
+        [35.5 62.5 4 7]
+        [35.5 84.5 4 7]
+        [48.0625 102.3125 4.125 6.25]
+        [68.5 108.5 4 6] 
     ]; 
 
 ROIrow1 = ceil(ROIInd(:,2));
@@ -52,57 +48,35 @@ ROIrow2 = floor(ROIInd(:,2))+floor(ROIInd(:,4));
 ROIcolumn2 = floor(ROIInd(:,1))+floor(ROIInd(:,3));
 
 for i = 1:numel(ImgInfo)
-    Img = ImgInfo(i).Img_corrected;
-    
-    j = size(ROIInd,1);
-    ImgROI = Img(ROIrow1(j):ROIrow2(j),ROIcolumn1(j):ROIcolumn2(j));
-    imginten0 = mean(ImgROI(:));
-    
+    Img = ImgInfo(i).Img;
     for j = 1:size(ROIInd,1)
         ImgROI = Img(ROIrow1(j):ROIrow2(j),ROIcolumn1(j):ROIcolumn2(j));
+        
+        if(j==1)
+            imginten0 = mean(ImgROI(:));
+        end
         ImgROI = ImgROI/imginten0;
         imginten(i,j) = mean(ImgROI(:));
         imgnoise(i,j) = std(ImgROI(:));
-        ImgInfo(i).ImgNor = ImgInfo(i).Img_corrected/imginten0;
     end
 end
 
-figure;imshow([ImgInfo.ImgNor],[0.2 2.7])
-
 
 %%
-waterind = 11;
-Contrast = (imginten-imginten(:,waterind))./repmat(imginten(:,waterind),[1,size(imginten,2)])*100;
+test = (imginten-imginten(:,1))./repmat(imginten(:,1),[1,size(imginten,2)])*100;
 AtomicNum = [53,56,64,70,73,79,83];
 MarkerSize = 50;
 LineWidth = 2;
+figure; 
 % yyaxis right;
 % scatter(AtomicNum,test(4,3:end),MarkerSize,'s','filled');  hold on;
 % ylabel('Increased contrast to water (%), CT')
 % legend({'CT'})
-NumSamples = size(Contrast,2)-1;
-xsample = 4:10;
-selectedmethod = [1,2,3,4,5];
-figure; 
-for method = selectedmethod
-    scatter(AtomicNum,Contrast(method,xsample),MarkerSize,'o','filled'); hold on;
-end
-refline;
+scatter(AtomicNum,test(1,3:end),MarkerSize,'o','filled'); hold on;
+scatter(AtomicNum,test(2,3:end),MarkerSize,'+','LineWidth',LineWidth);  hold on;
+scatter(AtomicNum,test(3,3:end),MarkerSize,'d','LineWidth',LineWidth);  hold on;
 ylabel('Increased contrast to water (%)')
-legend({ImgInfo(selectedmethod).Method})
-xlabel('Atomic No')
-set(gca,'FontSize',15)
-saveas(gcf,'D:\datatest\PairProd\GoodResult\nanoparticle_linearrelationship.png');
-saveas(gcf,'D:\datatest\PairProd\GoodResult\nanoparticle_linearrelationship.pdf');
-
-
-
-
-% scatter(xsample,Contrast(1,xsample),MarkerSize,'o','filled'); hold on;
-% scatter(xsample,Contrast(2,xsample),MarkerSize,'+','LineWidth',LineWidth);  hold on;
-% scatter(xsample,Contrast(3,xsample),MarkerSize,'d','LineWidth',LineWidth);  hold on;
-% scatter(xsample,Contrast(4,xsample),MarkerSize,'.','LineWidth',LineWidth);  hold on;
-% scatter(xsample,Contrast(5,xsample),MarkerSize,'*','LineWidth',LineWidth);  hold on;
+legend({'Ground truth','Reconstruction less','FBP'})
 
 
 % icolor = 'r';
@@ -112,23 +86,22 @@ saveas(gcf,'D:\datatest\PairProd\GoodResult\nanoparticle_linearrelationship.pdf'
 % icolor = 'b';
 % scatter(AtomicNum,test(3,3:end),[],icolor);hline3=refline; hline3.Color = icolor;  hold on;
 
-% 
-% 
-% figure; 
-% scatter(AtomicNum,Contrast(4,3:end),MarkerSize,'s','filled');  hold on;
-% ylabel('Increased contrast to water (%)')
-% legend({'CT'})
-% xlabel('Atomic No')
-% set(gca,'FontSize',15)
+xlabel('Atomic No')
+set(gca,'FontSize',15)
+
+
+figure; 
+scatter(AtomicNum,test(4,3:end),MarkerSize,'s','filled');  hold on;
+ylabel('Increased contrast to water (%)')
+legend({'CT'})
+xlabel('Atomic No')
+set(gca,'FontSize',15)
 
 
 %%
 
 
-figure;imagesc([PP_Dose],[0,0.035]); colorbar; colormap(jet)
-axis off
-axis equal
-saveas(gcf, 'D:\datatest\PairProd\GoodResult\nanoparticle_Dose_all.png')
+figure;imagesc([CT_Dose(:,:,end/2) PP_Dose(:,:,end/2)*10]); colorbar; colormap(jet)
 
 
 
