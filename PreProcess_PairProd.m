@@ -8,7 +8,7 @@ clc
 % end
 % !('/media/raid1/qlyu/PairProd/datatest/collect_doescalc_pairprod.sh')
 
-patientName = 'CTphantom_20beam_2mmbeamlet_10m';
+patientName = 'CTphantom_LimitedROI_2mmbeamlet_30m';
 projectName = 'PairProd';
 patFolder = fullfile('/media/raid1/qlyu/PairProd/datatest',patientName);
 dosecalcFolder = fullfile(patFolder,'dosecalc');
@@ -43,6 +43,24 @@ dosematrixFolder = fullfile(projectFolder,'dosematrix');
 mkdir(dosematrixFolder)
 save(fullfile(dosematrixFolder,[patientName projectName '_M_HighRes.mat']),'M','M_Anni','dose_data','masks','-v7.3');
 
+%% fluence map segments
+beamSizes = squeeze(sum(sum(params.BeamletLog0,1),2));
+cumsumbeamSizes = cumsum([0; beamSizes]);
+numbeamlets = size(M,2);
+
+x_ = ones(numbeamlets,1);
+dose = reshape(M*x_,size(masks{1}.mask));
+figure;imshow3D(dose,[])
+
+selectbeamNo = 1;
+x_onebeam = zeros(numbeamlets,1);
+x_onebeam(cumsumbeamSizes(selectbeamNo)+1:cumsumbeamSizes(selectbeamNo+1)) = 1;
+dose_onebeam = reshape(M*x_onebeam,size(masks{1}.mask));
+figure;imshow3D(dose_onebeam,[])
+
+clearvars M M_Anni
+
+
 %% Dicom
 DicomPath = fullfile(dosecalcFolder,'ctdata');
 baseFileNames = dir([DicomPath '/*.dcm']);
@@ -68,15 +86,13 @@ beamletNo = double(h5read(DetectedEventsfile, '/beamletNo')) + 1; %
 energy = h5read(DetectedEventsfile, '/energy'); %
 eventIds = double(h5read(DetectedEventsfile, '/eventIds')) + 1; %
 globalTimes = h5read(DetectedEventsfile, '/globalTimes'); %
-Mega = [globalTimes,eventIds,energy,beamletNo,beamNo,detectorIds];
+% Mega = [globalTimes,eventIds,energy,beamletNo,beamNo,detectorIds];
 save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection_original.mat']),'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','-v7.3');
 
 %% Clean data
 numevent = max(eventIds);
 numevent = numevent + 99 - mod(numevent-1,100);
 
-beamSizes = squeeze(sum(sum(params.BeamletLog0,1),2));
-cumsumbeamSizes = cumsum([0; beamSizes]);
 beamNoshift = cumsumbeamSizes(beamNo);
 beamletIDs = double(beamletNo) + beamNoshift;
 AlleventID = (beamletIDs-1)*numevent + eventIds;
@@ -90,9 +106,11 @@ mask_sameenergy = (energy(Ind_coin1)-energy(Ind_coin2)==0);
 timediff = globalTimes(Ind_coin1)-globalTimes(Ind_coin2);
 badIDbuff1 = Ind_coin1(mask_sameenergy & timediff>0);
 badIDbuff2 = Ind_coin2(mask_sameenergy & timediff<0);
-badID1 = union(badIDbuff1,badIDbuff2);
 
-clearvars Ind_coin1 Ind_coin2 mask_sameenergy sortInd_sameparticle sortAlldetectorIDInd sortedAlldetectorID timediff badIDbuff1 badIDbuff2
+clearvars AlldetectorID beamNoshift
+clearvars Ind_coin1 Ind_coin2 mask_sameenergy sortInd_sameparticle sortAlldetectorIDInd sortedAlldetectorID timediff 
+badID1 = union(badIDbuff1,badIDbuff2);
+clearvars badIDbuff1 badIDbuff2
 
 % boundary issue(det id: 1 and 1440)
 AlldetectorID2 = (AlleventID-1)*nb_cryst + mod(detectorIds,nb_cryst);
@@ -104,10 +122,12 @@ mask_sameenergy = (energy(Ind_coin1)-energy(Ind_coin2)==0);
 timediff = globalTimes(Ind_coin1)-globalTimes(Ind_coin2);
 badIDbuff1 = Ind_coin1(mask_sameenergy & timediff>0);
 badIDbuff2 = Ind_coin2(mask_sameenergy & timediff<0);
-badID2 = union(badIDbuff1,badIDbuff2);
 
+clearvars Ind_coin1 Ind_coin2 mask_sameenergy sortInd_sameparticle sortAlldetectorIDInd sortedAlldetectorID timediff
+badID2 = union(badIDbuff1,badIDbuff2);
+clearvars badIDbuff1 badIDbuff2
 badID = union(badID1,badID2);
-clearvars Ind_coin1 Ind_coin2 mask_sameenergy sortInd_sameparticle sortAlldetectorIDInd sortedAlldetectorID timediff badIDbuff1 badIDbuff2 badID1 badID2
+clearvars badID1 badID2
 
 beamletIDs(badID,:) = [];
 detectorIds(badID,:) = [];
@@ -116,7 +136,7 @@ beamletNo(badID,:) = [];
 energy(badID,:) = [];
 eventIds(badID,:) = [];
 globalTimes(badID,:) = [];
-Mega(badID,:) = [];
+% Mega(badID,:) = [];
 % save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','-v7.3');
 
 %% Reject detectors associated with primary beam; select photons based on energy resolution
@@ -131,7 +151,7 @@ beamletNo = beamletNo(Ind_accept);
 energy = energy(Ind_accept);
 eventIds = eventIds(Ind_accept);
 globalTimes = globalTimes(Ind_accept);
-Mega = Mega(Ind_accept,:);
+% Mega = Mega(Ind_accept,:);
 
 beamdet_accept = full(sparse(beamNo,detectorIds,1));
 figure; set(gcf,'pos',[2715   148    1480    1001])
@@ -173,102 +193,37 @@ beamletNo(badID,:) = [];
 energy(badID,:) = [];
 eventIds(badID,:) = [];
 globalTimes(badID,:) = [];
-Mega(badID,:) = [];
-
-%% fluence map segments
-numbeamlets = size(M,2);
-
-x_ = ones(numbeamlets,1);
-dose = reshape(M*x_,size(masks{1}.mask));
-figure;imshow3D(dose,[])
-
-selectbeamNo = 1;
-x_onebeam = zeros(numbeamlets,1);
-x_onebeam(cumsumbeamSizes(selectbeamNo)+1:cumsumbeamSizes(selectbeamNo+1)) = 1;
-dose_onebeam = reshape(M*x_onebeam,size(masks{1}.mask));
-figure;imshow3D(dose_onebeam,[])
+% Mega(badID,:) = [];
+save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),...
+    'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','beamletIDs','numevent','-v7.3');
 
 %% Time correction: Adding time of previous events
-doserate = 0.1/60; % (1Gy/min)
-detectorefficiency = 0.1;
-
-time = max(dose_onebeam(:))*numevent/doserate;
-eventrate = time/numevent*1e+09/detectorefficiency; % ns/event
-
-numeventbatch = 1e+06;
-numbatches = ceil(numevent/numeventbatch);
-deltatime_event = rand(numeventbatch,numbeamlets)*eventrate*2;
-cumsum_eventtime_batch = cumsum(deltatime_event);
-
-event_perbatchIDs = mod(eventIds-1, numeventbatch)+1;
-event_batchID = (eventIds - event_perbatchIDs)/numeventbatch + 1;
-event_perbatch_beamletIDs = sub2ind([numeventbatch,numbeamlets], event_perbatchIDs, beamletIDs);
-
-batchtime = max(cumsum_eventtime_batch(event_perbatch_beamletIDs));
-beamtime = batchtime*numbatches;
-
-CorrectedTime = globalTimes + cumsum_eventtime_batch(event_perbatch_beamletIDs)...
-        + (event_batchID-1)*batchtime + (beamNo-1)*beamtime;
-[sortedtime, sortInd] = sort(CorrectedTime);
-ImagingTime = max(CorrectedTime)/1e+09;  % s
-save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection_' num2str(doserate*6000) 'MUpermin.mat']),...
-    'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','beamletIDs',...
-    'detectorefficiency','ImagingTime','CorrectedTime','sortedtime','sortInd','numevent','eventrate','-v7.3');
-
-%% Time correction: Adding time of previous events
-doserate = 1/60; % (1Gy/min)
-detectorefficiency = 0.1;
-
-time = max(dose_onebeam(:))*numevent/doserate;
-eventrate = time/numevent*1e+09/detectorefficiency; % ns/event
-
-numeventbatch = 1e+06;
-numbatches = ceil(numevent/numeventbatch);
-deltatime_event = rand(numeventbatch,numbeamlets)*eventrate*2;
-cumsum_eventtime_batch = cumsum(deltatime_event);
-
-event_perbatchIDs = mod(eventIds-1, numeventbatch)+1;
-event_batchID = (eventIds - event_perbatchIDs)/numeventbatch + 1;
-event_perbatch_beamletIDs = sub2ind([numeventbatch,numbeamlets], event_perbatchIDs, beamletIDs);
-
-batchtime = max(cumsum_eventtime_batch(event_perbatch_beamletIDs));
-beamtime = batchtime*numbatches;
-
-CorrectedTime = globalTimes + cumsum_eventtime_batch(event_perbatch_beamletIDs)...
-        + (event_batchID-1)*batchtime + (beamNo-1)*beamtime;
-[sortedtime, sortInd] = sort(CorrectedTime);
-ImagingTime = max(CorrectedTime)/1e+09;  % s
-save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection_' num2str(doserate*6000) 'MUpermin.mat']),...
-    'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','beamletIDs',...
-    'detectorefficiency','ImagingTime','CorrectedTime','sortedtime','sortInd','numevent','eventrate','-v7.3');
-
-%% Time correction: Adding time of previous events
-doserate = 10/60; % (1Gy/min)
-detectorefficiency = 0.1;
-
-time = max(dose_onebeam(:))*numevent/doserate;
-eventrate = time/numevent*1e+09/detectorefficiency; % ns/event
-
-numeventbatch = 1e+06;
-numbatches = ceil(numevent/numeventbatch);
-deltatime_event = rand(numeventbatch,numbeamlets)*eventrate*2;
-cumsum_eventtime_batch = cumsum(deltatime_event);
-
-event_perbatchIDs = mod(eventIds-1, numeventbatch)+1;
-event_batchID = (eventIds - event_perbatchIDs)/numeventbatch + 1;
-event_perbatch_beamletIDs = sub2ind([numeventbatch,numbeamlets], event_perbatchIDs, beamletIDs);
-
-batchtime = max(cumsum_eventtime_batch(event_perbatch_beamletIDs));
-beamtime = batchtime*numbatches;
-
-CorrectedTime = globalTimes + cumsum_eventtime_batch(event_perbatch_beamletIDs)...
-        + (event_batchID-1)*batchtime + (beamNo-1)*beamtime;
-[sortedtime, sortInd] = sort(CorrectedTime);
-ImagingTime = max(CorrectedTime)/1e+09;  % s
-save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection_' num2str(doserate*6000) 'MUpermin.mat']),...
-    'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','beamletIDs',...
-    'detectorefficiency','ImagingTime','CorrectedTime','sortedtime','sortInd','numevent','eventrate','-v7.3');
-
+for doserate = [0.1/60 1/60 10/60]
+    for detectorefficiency = [0.1 1]
+        time = max(dose_onebeam(:))*numevent/doserate;
+        eventrate = time/numevent*1e+09/detectorefficiency; % ns/event
+        
+        numeventbatch = 1e+06;
+        numbatches = ceil(numevent/numeventbatch);
+        deltatime_event = rand(numeventbatch,numbeamlets)*eventrate*2;
+        cumsum_eventtime_batch = cumsum(deltatime_event);
+        
+        event_perbatchIDs = mod(eventIds-1, numeventbatch)+1;
+        event_batchID = (eventIds - event_perbatchIDs)/numeventbatch + 1;
+        event_perbatch_beamletIDs = sub2ind([numeventbatch,numbeamlets], event_perbatchIDs, beamletIDs);
+        
+        batchtime = max(cumsum_eventtime_batch(event_perbatch_beamletIDs));
+        beamtime = batchtime*numbatches;
+        
+        CorrectedTime = globalTimes + cumsum_eventtime_batch(event_perbatch_beamletIDs)...
+            + (event_batchID-1)*batchtime + (beamNo-1)*beamtime;
+        [sortedtime, sortInd] = sort(CorrectedTime);
+        ImagingTime = max(CorrectedTime)/1e+09;  % s
+        save(fullfile(dosematrixFolder,[patientName projectName '_CorrectedTime_' ...
+            num2str(doserate*6000) 'MUpermin_detectorefficiency_' num2str(detectorefficiency) '.mat']),...
+            'detectorefficiency','ImagingTime','CorrectedTime','sortedtime','sortInd','eventrate','-v7.3');
+    end
+end
 
 %% Time correction beamlet by beamlet
 eventrate = 2; % ns/event
@@ -281,8 +236,6 @@ CorrectedTime = globalTimes + cumsum_eventtime(eventIds)...
         + (beamletIDs-1)*time_perbeamlet;
 [sortedtime, sortInd] = sort(CorrectedTime);
 ImagingTime = max(CorrectedTime)/1e+09;  % s
-save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection_perbeamletdelivery.mat']),...
-    'detectorefficiency','ImagingTime','CorrectedTime','sortedtime','sortInd','numevent','eventrate',...
-    'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','beamletIDs','-v7.3');
-
+save(fullfile(dosematrixFolder,[patientName projectName '_CorrectedTime_perbeamletdelivery_eventrate_' num2str(eventrate) '.mat']),...
+    'detectorefficiency','ImagingTime','CorrectedTime','sortedtime','sortInd','eventrate','-v7.3');
 

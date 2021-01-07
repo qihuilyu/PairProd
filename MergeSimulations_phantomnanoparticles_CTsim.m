@@ -124,7 +124,8 @@ resultsFolder = fullfile(projectFolder,'results');
 mkdir(resultsFolder)
 save(fullfile(resultsFolder,'Recon_CT.mat'),'CT_FBP','CT_Dose')
 
-figure;imagesc(CT_Dose(:,:,ceil(end/2)),[]);
+figure;imagesc(CT_Dose(:,:,ceil(end/2)));colorbar;colormap(jet);
+axis off; axis equal;
 saveas(gcf,fullfile(resultsFolder,'CT_Dose.png'))
 
 figure;imshow(CT_FBP(:,:,ceil(end/2)),[0,0.15])

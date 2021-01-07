@@ -8,9 +8,21 @@ clc
 % end
 % !('/media/raid1/qlyu/PairProd/datatest/collect_doescalc_pairprod.sh')
 
-patientName = 'phantom_DECT_360beam_50m_slice5mm_60kVp_CTsimNEW';  % CTphantom_360beam_200m_thinslice5mm_CTsimNEW 
+patientName = 'DECTphantom_360beam_50m_slice5mm_60kVp_CTsimNEW';  %  
 projectName = 'CTsim';
 Folder = '/media/raid1/qlyu/PairProd/datatest';
+
+numparticles = 50*1e+06;
+
+blankfieldName = 'phantom_nanoparticles_360beam_200m_thinslice5mm_CTsimNEW_blankfield';
+numparticles_blankfield = 2e+08;
+load(fullfile(Folder,blankfieldName,'dosecalc','CTsim_CTprojection.mat'),'CTprojection');
+CTprojection_blankfield = CTprojection(:,:,1);
+CTprojectionNew = CTprojection*numparticles_blankfield;
+if(max(CTprojectionNew - round(CTprojectionNew),[],'all')>0.01 || max(CTprojectionNew/2 - round(CTprojectionNew/2),[],'all')<0.01)
+    error('Number of Particles mismatch!!!')
+end
+
 patFolder = fullfile(Folder,patientName);
 dosecalcFolder = fullfile(patFolder,'dosecalc');
 h5file = fullfile(dosecalcFolder,[projectName '_beamletdose.h5']);
@@ -57,21 +69,17 @@ figure;imshow3D(img,[0,2000])
 save(fullfile(dosematrixFolder,[patientName projectName '_dicomimg.mat']),'img','imgres');
 
 %%
-load(fullfile(Folder,'phantom_nanoparticles_360beam_200m_thinslice5mm_CTsimNEW_blankfield','dosecalc','CTsim_CTprojection.mat'),'CTprojection');
-Projection0 = CTprojection(:,:,1);
+load(fullfile(dosecalcFolder,[projectName '_CTprojection.mat']),'CTprojection');
 
-load(DetectedEventsCTfile,'CTprojection');
-LI = log(permute(repmat(Projection0,[1,1,size(CTprojection,3)]),[2,1,3])./permute(CTprojection,[2,1,3]));
-
+LI = log(permute(repmat(CTprojection_blankfield,[1,1,size(CTprojection,3)]),[2,1,3])./permute(CTprojection,[2,1,3]));
 LI(isinf(LI)) = 0;
 LI(isnan(LI)) = 0;
 figure;imshow3D(LI,[]);
-save(fullfile(dosematrixFolder,'LineIntegrals.mat'),'CTprojection','LI');
+
+save(fullfile(dosematrixFolder,'LineIntegrals.mat'),'CTprojection','CTprojection_blankfield','LI','numparticles');
 
 
-%%
-
-
+%% Image Reconstruction
 cg = ct_geom('fan', ...
     'ns', 250, ... % detector channels
     'nt', 500, ... % detector rows
@@ -90,14 +98,20 @@ mask2(end) = 0; % trick: test it
 ig.mask = repmat(mask2, [1 1 ig.nz]);
 li_hat = fdk_filter(LI(126:end-125,:,1:end), 'ramp', cg.dsd, cg.dfs, cg.ds);
 
-
 args = {flip(li_hat,1), cg, ig, 'ia_skip', 1}; % increase 1 for faster debugging
 CT_FBP = cbct_back(args{:}, 'use_mex', 1, 'back_call', @jf_mex);
 
+%% Save files
+
+CT_Dose = reshape(M*ones(size(M,2),1)*numparticles,size(StructureInfo(1).Mask));
+
 resultsFolder = fullfile(projectFolder,'results');
 mkdir(resultsFolder)
-save(fullfile(resultsFolder,'Recon_CT.mat'),'CT_FBP')
+save(fullfile(resultsFolder,'Recon_CT.mat'),'CT_FBP','CT_Dose')
 
-figure;imshow3D(CT_FBP,[0,0.15])
-saveas(gcf, fullfile(resultsFolder,'CT_FBP.png'))
+figure;imagesc(CT_Dose(:,:,ceil(end/2)));colorbar;colormap(jet);
+axis off; axis equal;
+saveas(gcf,fullfile(resultsFolder,'CT_Dose.png'))
 
+figure;imshow(CT_FBP(:,:,ceil(end/2)),[0,0.15])
+saveas(gcf,fullfile(resultsFolder,'CT_FBP.png'))
