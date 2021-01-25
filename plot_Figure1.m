@@ -41,7 +41,7 @@ save(fullfile(paramsFolder,['StructureInfo' num2str(InfoNum) '.mat']),'Structure
 
 dosematrixFolder = fullfile(projectFolder,'dosematrix');
 mkdir(dosematrixFolder)
-save(fullfile(dosematrixFolder,[patientName projectName '_M_HighRes.mat']),'M','M_Anni','dose_data','masks','-v7.3');
+% save(fullfile(dosematrixFolder,[patientName projectName '_M_HighRes.mat']),'M','M_Anni','dose_data','masks','-v7.3');
 
 %% fluence map segments
 beamSizes = squeeze(sum(sum(params.BeamletLog0,1),2));
@@ -87,7 +87,7 @@ energy = h5read(DetectedEventsfile, '/energy'); %
 eventIds = double(h5read(DetectedEventsfile, '/eventIds')) + 1; %
 globalTimes = h5read(DetectedEventsfile, '/globalTimes'); %
 % Mega = [globalTimes,eventIds,energy,beamletNo,beamNo,detectorIds];
-save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection_original.mat']),'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','-v7.3');
+% save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection_original.mat']),'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','-v7.3');
 
 %% Clean data
 numevent = max(eventIds);
@@ -140,19 +140,6 @@ globalTimes(badID,:) = [];
 % save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','-v7.3');
 
 %% Reject detectors associated with primary beam; select photons based on energy resolution
-
-EnergyResolution = 0.1;
-Ind_accept = find(abs(energy-0.511)<0.511*EnergyResolution);
-
-beamletIDs = beamletIDs(Ind_accept);
-detectorIds = detectorIds(Ind_accept);
-beamNo = beamNo(Ind_accept);
-beamletNo = beamletNo(Ind_accept);
-energy = energy(Ind_accept);
-eventIds = eventIds(Ind_accept);
-globalTimes = globalTimes(Ind_accept);
-% Mega = Mega(Ind_accept,:);
-
 beamdet_accept = full(sparse(beamNo,detectorIds,1));
 figure; set(gcf,'pos',[2715   148    1480    1001])
 for ii = 1:2:size(beamdet_accept,1)
@@ -162,11 +149,11 @@ end
 legend({'beam 1','beam 3','beam 5','beam 7'})
 xlabel('Detector ID')
 ylabel('Detected photon counts')
-title('Detected photon counts within 10% energy resolution')
+title('Detected photon counts')
 set(gca,'FontSize',20)
 saveas(gcf,fullfile(dosematrixFolder,['Original_counts.png']))
 
-thresh = median(beamdet_accept(ii,:))*5;
+thresh = median(beamdet_accept(ii,:))*4;
 beamNo_detectorIDs_rej = find(beamdet_accept>thresh);
 beamNo_detectorIDs = (detectorIds-1)*size(beamdet_accept,1) + beamNo;
 badID = ismember(beamNo_detectorIDs,beamNo_detectorIDs_rej);
@@ -182,7 +169,7 @@ legend({'beam 1','beam 5','beam 9','beam 13','beam 17'})
 % legend({'beam 1','beam 3','beam 5','beam 7'})
 xlabel('Detector ID')
 ylabel('Detected photon counts')
-title('Detected photon counts within 10% energy resolution')
+title('Detected photon counts')
 set(gca,'FontSize',20)
 saveas(gcf,fullfile(dosematrixFolder,['Processed_counts.png']))
 
@@ -197,12 +184,67 @@ globalTimes(badID,:) = [];
 save(fullfile(dosematrixFolder,[patientName projectName '_ringdetection.mat']),...
     'detectorIds','beamNo','beamletNo','energy','eventIds','globalTimes','beamletIDs','numevent','-v7.3');
 
-%% Time correction: Adding time of previous events
-for doserate = [0.1/60 1/60 10/60]
-    for detectorefficiency = [0.1 1]
+theta_buff = detectorIds/max(detectorIds)*2*pi;
+theta_buff0 = floor(mean(beamNo_detectorIDs_rej))/max(detectorIds)*2*pi;
+theta = pi - abs(mod(theta_buff - theta_buff0, 2*pi)-pi);
+
+%%
+Nbins = 500;
+figure;histogram(energy,Nbins)
+xlabel('Energy (MeV)')
+figure;histogram(energy(energy<1),Nbins)
+xlabel('Energy (MeV)')
+figure;histogram(energy(energy<0.8&energy>0.2),Nbins)
+xlabel('Energy (MeV)')
+figure;histogram(energy(energy<0.7&energy>0.3),Nbins)
+
+Nbins = 30;
+figure;histogram(theta,Nbins)
+figure;histogram(theta(energy<1),Nbins)
+
+X = [energy(energy<1),theta(energy<1)];
+[N,c] = hist3(X,'Ctrs',{0:1/Nbins:1 0:pi/Nbins:pi});
+figure;heatmap(c{2},c{1},N)
+
+figure;hist3(X,'Ctrs',{0:1/Nbins:1 0:pi/Nbins:pi})
+xlabel('energy')
+ylabel('theta')
+
+energy_90 = energy(abs(theta-pi/2)<0.001);
+save(fullfile(dosematrixFolder,'photonstats.mat'),'energy','energy_90')
+Nbins = 50;
+figure;histogram(energy_90,Nbins)
+xlabel('Energy (MeV)')
+
+
+%%
+
+Ind_511 = find(abs(energy-0.511)<0.511*0.0001);
+Ind_10 = find(abs(energy-0.511)<0.511*0.1);
+numel(Ind_511)/numel(Ind_10)
+Ind_20 = find(abs(energy-0.511)<0.511*0.2);
+numel(Ind_511)/numel(Ind_20)
+numel(Ind_511)/numel(energy)
+numdetectors = max(detectorIds);
+
+figure;histogram(energy(Ind_10),Nbins)
+xlabel('Energy (MeV)')
+
+
+
+%%
+
+info = struct();
+count = 1;
+
+for doserate = [10/60]
+    for detectorefficiency = 0.1
+        info(count).doserate = doserate*6000;        
+        info(count).detectorefficiency = detectorefficiency;
+        
         time = max(dose_onebeam(:))*numevent/doserate;
         eventrate = time/numevent*1e+09/detectorefficiency; % ns/event
-        
+
         numeventbatch = 1e+06;
         numbatches = ceil(numevent/numeventbatch);
         deltatime_event = rand(numeventbatch,numbeamlets)*eventrate*2;
@@ -217,25 +259,42 @@ for doserate = [0.1/60 1/60 10/60]
         
         CorrectedTime = globalTimes + cumsum_eventtime_batch(event_perbatch_beamletIDs)...
             + (event_batchID-1)*batchtime + (beamNo-1)*beamtime;
-        [sortedtime, sortInd] = sort(CorrectedTime);
         ImagingTime = max(CorrectedTime)/1e+09;  % s
-        save(fullfile(dosematrixFolder,[patientName projectName '_CorrectedTime_' ...
-            num2str(doserate*6000) 'MUpermin_detectorefficiency_' num2str(detectorefficiency) '.mat']),...
-            'detectorefficiency','ImagingTime','CorrectedTime','sortedtime','sortInd','eventrate','-v7.3');
+        
+        TimeResolution = 0.02; % 400 ps
+        CoincidenceTime = 1;
+        Ind_coin_511 = IdentifyLOR_511(energy, CorrectedTime, CoincidenceTime);
+        
+        CorrectedTime_TR = CorrectedTime + TimeResolution*randn(size(CorrectedTime));
+        Ind_coin_10 = IdentifyLOR(energy, CorrectedTime_TR, CoincidenceTime, 0.1);
+        TruePositive_10 = length(intersect(Ind_coin_511(:,1).*Ind_coin_511(:,2),Ind_coin_10(:,1).*Ind_coin_10(:,2)))/length(Ind_coin_10(:,1));
+
+        energy_10_coin = energy(Ind_coin_10(:));
+        theta_10_coin = theta(Ind_coin_10(:));
+        
+        Nbins = 50;
+        figure;histogram(energy_10_coin,Nbins)
+        xlabel('Energy (MeV)')
+           
+        energy_10_90degrees_coin = energy_10_coin(abs(theta_10_coin-pi/2)<0.001);
+        Nbins = 50;
+        figure;histogram(energy_10_90degrees_coin,Nbins)
+        xlabel('Energy (MeV)')
+        
+        area = 2*pi*120*10; % cm^2
+        info(count).flux_coincident_511 = numel(Ind_coin_511)*2/area/time;
+        
+        count = count+1;
     end
 end
 
-%% Time correction beamlet by beamlet
-eventrate = 2; % ns/event
 
-deltatime_event = rand(numevent,1)*eventrate*2;
-cumsum_eventtime = cumsum(deltatime_event);
-time_perbeamlet = eventrate*numevent + 20;
+save(fullfile(dosematrixFolder,'photonstats.mat'),'energy','energy_10_coin','energy_10_90degrees_coin')
 
-CorrectedTime = globalTimes + cumsum_eventtime(eventIds)...
-        + (beamletIDs-1)*time_perbeamlet;
-[sortedtime, sortInd] = sort(CorrectedTime);
-ImagingTime = max(CorrectedTime)/1e+09;  % s
-save(fullfile(dosematrixFolder,[patientName projectName '_CorrectedTime_perbeamletdelivery_eventrate_' num2str(eventrate) '.mat']),...
-    'detectorefficiency','ImagingTime','CorrectedTime','sortedtime','sortInd','eventrate','-v7.3');
 
+% 
+% 
+% T = struct2table(info);
+% filename = fullfile(dosematrixFolder,'stats.csv');
+% delete(filename)
+% writetable(T,filename)
