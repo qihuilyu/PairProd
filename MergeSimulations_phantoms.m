@@ -3,9 +3,9 @@ close all
 clc
 
 projectName = 'PairProd';
-patientNameList = {'CTphantom_LimitedROI_2mmbeamlet_30m',...
-    'CTphantom_LimitedROI_2mmbeamlet_100m','CTphantom_LimitedROI_2mmbeamlet_100m_run2'};
-MergedName = 'CTphantom_LimitedROI_2mmbeamlet_230m_merged';
+patientNameList = {'PartialViewPhantom_LimitedROI_2mmbeamlet_30m',...
+    'PartialViewPhantom_LimitedROI_2mmbeamlet_100m','PartialViewPhantom_LimitedROI_2mmbeamlet_100m_run2'};
+MergedName = 'PartialViewPhantom_LimitedROI_2mmbeamlet_230m_merged';
 
 M0 = 0;
 M_Anni0 = 0;
