@@ -252,8 +252,8 @@ for doserate = [0.1/60 1/60 10/60]
         detid_pair = detectorIds(Ind_coin_accept);
         cilist = GetACfactor_list(ci, detid_pair, nb_cryst, R1, distrange, newunidist);
         deltat = CorrectedTime_TR(Ind_coin_accept(:,1)) - CorrectedTime_TR(Ind_coin_accept(:,2));
-        [img_direct, img_ci, img_ciN] = recon_TOF_direct(reconparams, detid_pair, deltat, cilist);
-        % [img_direct, img_ci, img_ciN] = recon_TOF_direct(reconparams, detid_pair, deltat, cilist./cilist);
+        sigma0 = 0;
+        [img_direct, img_ci, img_ciN] = recon_TOF_direct(reconparams, detid_pair, deltat, sigma0, cilist);
         figure;imshow([Anni2D/max(Anni2D(:)) img_fbp/max(img_fbp(:)) img_direct/max(img_direct(:))],[0.2,1])
         img_direct_corrected = img_direct./fluence2;
         img_direct_corrected(mask0==0)=0;

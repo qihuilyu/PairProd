@@ -19,4 +19,5 @@ spec10MV = [
 
 figure;plot(spec10MV(:,1),spec10MV(:,2),'LineWidth',2);
 title('10MV spectrum')
-
+xlabel('Energy (MV)')
+ylabel('Percentage')

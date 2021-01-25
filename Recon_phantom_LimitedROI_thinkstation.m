@@ -2,7 +2,7 @@ clear
 close all
 clc
 
-patientName = 'phantom_nanoparticles_LimitedROI_2mmbeamlet_230m';
+patientName = 'PartialViewPhantom_LimitedROI_2mmbeamlet_230m_merged';
 beamletwidth = 2;
 numevents = 230e+06;
 slicenum = 50;
@@ -265,17 +265,19 @@ for doserate = [0.1/60 1/60 10/60]
         detid_pair = detectorIds(Ind_coin_accept);
         cilist = GetACfactor_list(ci, detid_pair, nb_cryst, R1, distrange, newunidist);
         deltat = CorrectedTime_TR(Ind_coin_accept(:,1)) - CorrectedTime_TR(Ind_coin_accept(:,2));
-        [img_direct, img_ci, img_ciN] = recon_TOF_direct(reconparams, detid_pair, deltat, cilist);
+
+        sigma0 = 1;
+        [img_direct, img_ci, img_ciN] = recon_TOF_direct(reconparams, detid_pair, deltat, sigma0, cilist);
         % [img_direct, img_ci, img_ciN] = recon_TOF_direct(reconparams, detid_pair, deltat, cilist./cilist);
         figure;imshow([Anni2D/max(Anni2D(:)) img_fbp/max(img_fbp(:)) img_direct/max(img_direct(:))],[0.2,1])
         img_direct_corrected = img_direct./fluence2new;
         img_direct_corrected(maskfluencenew==0)=0;
         figure;imshow([img_direct_corrected],[])
         saveas(gcf,fullfile(resultsFolder,['img_direct_corrected_' ...
-            num2str(doserate*6000) 'MUpermin_detectorefficiency_' num2str(detectorefficiency) '.png']));
+            num2str(doserate*6000) 'MUpermin_detectorefficiency_' num2str(detectorefficiency) '_sigma_' num2str(sigma0) '.png']));
         
         save(fullfile(resultsFolder,['Recon_pairprod_direct_' num2str(doserate*6000) ...
-            'MUpermin_detectorefficiency_' num2str(detectorefficiency) '.mat']),...
+            'MUpermin_detectorefficiency_' num2str(detectorefficiency) '_sigma_' num2str(sigma0) '.mat']),...
             'Anni2D','img_direct','img_direct_corrected',...
             'fluence2','ci','cilist','mask0','TruePositive');
         
@@ -302,16 +304,17 @@ for eventrate = 2 % ns/event
     src_select = [srcs(beamletIDs_select(:,1),:)];
     beampathsy_select = [beampathsy(beamletIDs_select(:,1),:)];
     
-    sigma0 = 0;
+    sigma0 = 1;
     [img_beampath, img_ci_beampath, img_ciN_beampath] = recon_beampathbased(reconparams, detid_pair, src_select, beampathsy_select, sigma0, cilist);
     % img_beampath_smooth = imgaussfilt(img_beampath);
     % figure;imshow([img_beampath img_beampath_smooth],[])
     img_beampath_corrected = img_beampath./fluence2new;
     img_beampath_corrected(maskfluencenew==0)=0;
     figure;imshow([img_beampath_corrected],[])
-    saveas(gcf,fullfile(resultsFolder,['img_beampath_corrected_eventrate_' num2str(eventrate) '.png']));
+    saveas(gcf,fullfile(resultsFolder,['img_beampath_corrected_eventrate_' ...
+        num2str(eventrate) '_sigma_' num2str(sigma0) '.png']));
     
-    save(fullfile(resultsFolder,['Recon_pairprod_beampath_eventrate_' num2str(eventrate) '.mat']),...
+    save(fullfile(resultsFolder,['Recon_pairprod_beampath_eventrate_' num2str(eventrate) '_sigma_' num2str(sigma0) '.mat']),...
         'Anni2D','img_beampath','img_beampath_corrected',...
         'fluence2','ci','cilist','mask0','TruePositive');
     
@@ -352,7 +355,7 @@ figure;imshow([Anni2D_corrected/mean(Anni2D_corrected(ROIrow1(j):ROIrow2(j),ROIc
     [0.4,1.9])
 saveas(gcf, fullfile(resultsFolder,'Recon_pairprod.png'))
 
-dose2D = TranslateFigure(dose2D,ind1,ind2);
+dose2D = TranslateFigure(dose3D(:,:,slicenum),ind1,ind2);
 PP_Dose = dose2D*numevents;
 save(fullfile(resultsFolder,'Recon_pairprod.mat'),'Anni2D','img_fbp','img_direct',...
     'img_beampath','fluence2','Anni2D_corrected','img_fbp_corrected',...

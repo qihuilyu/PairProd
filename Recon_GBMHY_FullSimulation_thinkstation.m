@@ -1,6 +1,6 @@
-% clear
-% close all
-% clc
+clear
+close all
+clc
 
 patientName = 'GBMHY_final_100m_run01torun10_1000MUpermin';
 projectName = 'PairProd';
@@ -12,8 +12,8 @@ OutputFileName = fullfile('D:\datatest\PairProd\','GBMHY.mat');
 projectFolder = fullfile(patFolder,projectName);
 dosecalcFolder = fullfile(patFolder,'dosecalc');
 dosematrixFolder = fullfile(projectFolder,'dosematrix');
-resultFolder = fullfile(projectFolder,'results');
-mkdir(resultFolder)
+resultsFolder = fullfile(projectFolder,'results');
+mkdir(resultsFolder)
 
 load(fullfile(dosematrixFolder,[patientName projectName '_ringdetection_directmerge.mat']),...
     'energy','detectorIds','CorrectedTime','eventIds','numeventsvec');
@@ -40,15 +40,12 @@ EnergyResolution = 0.1;
 CoincidenceTime = 1;  % ns
 
 Ind_coin_511 = IdentifyLOR_511(energy, CorrectedTime, CoincidenceTime);
-Ind_coin_accept = IdentifyLOR(energy, CorrectedTime, CoincidenceTime, EnergyResolution);
-
-TruePositive = length(Ind_coin_511)/length(Ind_coin_accept);
-% save(fullfile(dosematrixFolder,[patientName projectName '_detid_pair.mat']),'Ind_coin_511','Ind_coin_accept');
 
 %% Image Reconstruction
 TimeResolution = 0.3; % 300 ps
 CorrectedTime_TR = CorrectedTime + TimeResolution*randn(size(CorrectedTime));
 Ind_coin_accept = IdentifyLOR(energy, CorrectedTime_TR, CoincidenceTime, EnergyResolution);
+TruePositive = length(intersect(Ind_coin_511(:,1).*Ind_coin_511(:,2),Ind_coin_accept(:,1).*Ind_coin_accept(:,2)))/length(Ind_coin_accept(:,1));
 
 R1 = 1200;
 distrange = 300;
@@ -58,10 +55,11 @@ nb_cryst = max(detectorIds);
 detid_pair = detectorIds(Ind_coin_accept);
 [sino, dr, newunidist, sinobuff, unidist] = rebin_PET2(detid_pair, nb_cryst, R1, distrange);
 
-imgres = 4;
+imgres = 2.5;
 ig = image_geom('nx', size(img,1), 'ny', size(img,2), 'fov', size(img,1)*imgres);
 sg = sino_geom('par', 'nb', size(sino,1), 'na', size(sino,2), 'dr', dr);
 img_fbp_nocorrect = em_fbp_QL(sg, ig, sino);
+figure;imshow(img_fbp_nocorrect,[])
 
 Anni3D = reshape(M_Anni*numeventsvec,size(masks{1}.mask));
 Anni2D = Anni3D(:,:,slicenum);
@@ -72,118 +70,67 @@ dose2D = dose3D(:,:,slicenum);
 figure;imshow(dose2D,[])
 
 ind1 = 20; ind2 = 20;
-Anni2D = Anni3D(:,:,slicenum);
-Anni2Dold = Anni2D;
-Anni2D = 0*Anni2D;
-Anni2D(ind1+1:end,ind2+1:end) = Anni2Dold(1:end-ind1,1:end-ind2 );
-% Anni2D(1:end+ind1,ind2+1:end) = Anni2Dold(-ind1+1:end,1:end-ind2 );
+Anni2D = TranslateFigure(Anni3D(:,:,slicenum),ind1,ind2);
 % figure;imshow([Anni2D/max(Anni2D(:)),img_fbp_nocorrect/max(img_fbp_nocorrect(:))],[])
 C = imfuse(Anni2D/max(Anni2D(:)),img_fbp_nocorrect/max(img_fbp_nocorrect(:)),'falsecolor','Scaling','joint','ColorChannels',[1 2 0]);
 figure; imshow(C)
 
-mumapold = mumap;
-mumap = 0*mumap;
-mumap(ind1+1:end,ind2+1:end) = mumapold(1:end-ind1,1:end-ind2 );
-% mumap(1:end-ind1,ind2+1:end) = mumapold(ind1+1:end,1:end-ind2 );
-figure;imshow(mumap,[])
+mumapnew = TranslateFigure(mumap,ind1,ind2);
+figure;imshow(mumapnew,[])
 
 G = Gtomo2_strip(sg, ig);
 % ci = GetACfactor_sino(G, mumap);
-li = G * mumap;
+li = G * mumapnew;
 ci = exp(-li);
 img_fbp = em_fbp_QL(sg, ig, sino./ci);
+figure;imshow([img_fbp],[])
+saveas(gcf,fullfile(resultsFolder,['img_fbp.png']));
+
+save(fullfile(resultsFolder,['Recon_pairprod_fbp.mat']),...
+    'Anni2D','img_fbp',...
+    'ci','TruePositive');
 
 %% Reconstruction-less image generation
 TimeResolution = 0.02; % 20 ps
 CorrectedTime_TR = CorrectedTime + TimeResolution*randn(size(CorrectedTime));
 Ind_coin_accept = IdentifyLOR(energy, CorrectedTime_TR, CoincidenceTime, EnergyResolution);
+TruePositive = length(intersect(Ind_coin_511(:,1).*Ind_coin_511(:,2),Ind_coin_accept(:,1).*Ind_coin_accept(:,2)))/length(Ind_coin_accept(:,1));
 detid_pair = detectorIds(Ind_coin_accept);
 
 cilist = GetACfactor_list(ci, detid_pair, nb_cryst, R1, distrange, newunidist);
 reconparams = struct('nb_cryst',nb_cryst,'R1',R1,'distrange',distrange,...
     'imgres',imgres,'imgsize',[ig.nx, ig.ny]);
 deltat = CorrectedTime(Ind_coin_accept(:,1)) - CorrectedTime(Ind_coin_accept(:,2));
-[img_direct, img_ci, img_ciN] = recon_TOF_direct(reconparams, detid_pair, deltat, cilist);
-figure;imshow([Anni2D/max(Anni2D(:)) img_fbp/max(img_fbp(:)) img_direct/max(img_direct(:))],[])
+for sigma0 = 2
+    [img_direct, img_ci, img_ciN] = recon_TOF_direct(reconparams, detid_pair, deltat, sigma0, cilist);
+    figure;imshow([img_direct],[])
+    saveas(gcf,fullfile(resultsFolder,['img_direct_sigma0_' num2str(sigma0) '.png']));
+    
+    save(fullfile(resultsFolder,['Recon_pairprod_direct_sigma0_' num2str(sigma0) '.mat']),...
+        'Anni2D','img_direct',...
+        'ci','cilist','TruePositive');
+end
+% figure;imshow([img_fbp/max(img_fbp(:)) img_direct/max(img_direct(:))],[])
+% figure;imshow([img_fbp_nocorrect/max(img_fbp_nocorrect(:)) img_direct/max(img_direct(:))],[])
 
+%% TERMA
 
-%%
-BODY = (StructureInfo(1).Mask | StructureInfo(2).Mask);
-PTV = StructureInfo(1).Mask;
+load('D:\datatest\PairProd\GBMHY_TERMA_100m\PairProd\dosematrix\GBMHY_TERMA_100mPairProd_M_TERMA_HighRes.mat','M_TERMA')
+load('D:\datatest\PairProd\GBMHY_final_100m\PairProd\dosematrix\GBMHY_final_100mPairProd_M_HighRes.mat')
 
-xoff = -0.2;
-yoff = 0.2;
+TERMA3D = reshape(M_TERMA*numeventsvec,size(masks{1}.mask));
+TERMA2D = TERMA3D(:,:,slicenum);
+figure;imshow(TERMA2D,[])
 
-dose3D(dose3D<0) = 0;
-dose3D = dose3D/mean(dose3D(PTV==1));
-dose3D(BODY==0) = 0;
-planName = [patientName 'dose3D'];
-addDoseToGui_Move_QL(dose3D,[planName],xoff,yoff)
+Anni3D = reshape(M_Anni*numeventsvec,size(masks{1}.mask));
+Anni2D = Anni3D(:,:,slicenum);
+figure;imshow(Anni2D,[])
 
-Anni3D(Anni3D<0) = 0;
-Anni3D = Anni3D/mean(Anni3D(PTV==1));
-Anni3D(BODY==0) = 0;
-planName = [patientName 'Anni3D'];
-addDoseToGui_Move_QL(Anni3D,[planName],xoff,yoff)
+dose3D = reshape(M*numeventsvec,size(masks{1}.mask));
+dose2D = dose3D(:,:,slicenum);
+figure;imshow(dose2D,[])
 
-
-xoff = -5.2;
-yoff = 5.4;
-
-BODY2D = BODY(:,:,slicenum);
-BODY2Dold = BODY2D;
-BODY2D = 0*BODY2D;
-BODY2D(ind1+1:end,ind2+1:end) = BODY2Dold(1:end-ind1,1:end-ind2 );
-
-PTV2D = PTV(:,:,slicenum);
-PTV2Dold = PTV2D;
-PTV2D = 0*PTV2D;
-PTV2D(ind1+1:end,ind2+1:end) = PTV2Dold(1:end-ind1,1:end-ind2 );
-
-img_direct(img_direct<0) = 0;
-img_direct = img_direct/mean(img_direct(PTV2D==1));
-img_direct(BODY2D==0) = 0;
-img_direct3D = repmat(img_direct,[1,1,size(Anni3D,3)]);
-planName = [patientName 'img_direct'];
-addDoseToGui_Move_QL(img_direct3D,[planName],xoff,yoff)
-
-img_fbp(img_fbp<0) = 0;
-img_fbp = img_fbp/mean(img_fbp(PTV2D==1));
-img_fbp(BODY2D==0) = 0;
-img_fbp3D = repmat(img_fbp,[1,1,size(Anni3D,3)]);
-planName = [patientName 'img_fbp'];
-addDoseToGui_Move_QL(img_fbp3D,[planName],xoff,yoff)
-
-%%
-load('D:\datatest\patient\patInfo.mat')
-
-% save('D:\datatest\patient\patInfo.mat','patInfo')
-
-
-%% Dose Wash
-patientName = 'GBMHY_PairProd';
-ImageSize = [2,2];
-jj=find(strcmp({patInfo.Name},patientName));
-strNum = patInfo(jj).strNum;
-StructureInfo = patInfo(jj).StructureInfo;
-
-FigureNum = get(gcf,'Number');
-global planC stateS
-patInfo(16).coordInd = [197,197,71];
-patInfo(16).colorbarRange = [0,1.1];
-ChangeCERRdoseWash_QL(patientName,patInfo)
-
-figuresFolder = ['D:\datatest\PairProd\GoodResult\dosewash\'];
-mkdir(figuresFolder)
-figureName = [patientName projectName];
-[EntireImg,Imgs,ImgsInit,Masks] = SaveDoseWash_QL(patInfo, figuresFolder,figureName,[13:16],patientName,FigureNum,ImageSize);
-
-%%
-
-figure;imshow([[Imgs{1,2} Imgs{1,5}]; [Imgs{2,2} Imgs{2,5}]])
-saveas(gcf,fullfile(figuresFolder,'dosewash.png'))
-saveas(gcf,fullfile(figuresFolder,'dosewash.tiff'))
-
-
+save(fullfile(resultsFolder,['Dose_TERMA_PPTI.mat']),...
+    'Anni3D','TERMA3D','dose3D');
 
 

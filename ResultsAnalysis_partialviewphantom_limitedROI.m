@@ -1,5 +1,5 @@
-load('D:\datatest\PairProd\CTphantom_20beam_2mmbeamlet_25m\PairProd\results\Recon_pairprod.mat')
-load('D:\datatest\PairProd\CTphantom_360beam_200m_thinslice5mm_CTsimNEW\CTsim\results\Recon_CT.mat')
+load('D:\datatest\PairProd\PartialViewPhantom_LimitedROI_2mmbeamlet_230m_merged\PairProd\results\Recon_pairprod.mat')
+
 i = 1;
 ImgInfo(i).Img_raw = Anni2D.*mask0;
 ImgInfo(i).Img_corrected = Anni2D_corrected.*mask0;
@@ -14,34 +14,23 @@ i = i+1;
 ImgInfo(i).Img_raw = img_beampath.*mask0;
 ImgInfo(i).Img_corrected = img_beampath_corrected.*mask0;
 ImgInfo(i).ImgNorMax = ImgInfo(i).Img_raw/max(ImgInfo(i).Img_raw(:));
-ImgInfo(i).Method = 'PPI SPB';
+ImgInfo(i).Method = 'PPI beam-path';
 i = i+1;
 ImgInfo(i).Img_raw = img_direct.*mask0;
 ImgInfo(i).Img_corrected = img_direct_corrected.*mask0;
 ImgInfo(i).ImgNorMax = ImgInfo(i).Img_raw/max(ImgInfo(i).Img_raw(:));
-ImgInfo(i).Method = 'PPI TOF';
-i = i+1;
-ImgInfo(i).Img_raw = CT_FBP(:,:,end/2).*mask0;
-ImgInfo(i).Img_corrected = CT_FBP(:,:,end/2).*mask0;
-ImgInfo(i).ImgNorMax = ImgInfo(i).Img_raw/max(ImgInfo(i).Img_raw(:));
-ImgInfo(i).Method = 'CT';
+ImgInfo(i).Method = 'PPI reconstruction-less';
 
-figure;imshow([ImgInfo.ImgNorMax])
+figure;imshow([ImgInfo.Img_corrected],[])
+
 
 %%
 
 ROIInd = [
-        [89.5 102.5 5 5]  % 1
-        [102.5 85.5 5 5]  % 2
-        [102.5 63.5 5 5]  % 3
-        [89.5 46.5 5 5]  % 4
-        [68.5 39.5 5 5]  % 5
-        [48.5 46.5 5 5]  % 6
-        [35.5 63.5 5 5]  % 7
-        [35.5 85.5 5 5]  % 8
-        [47.5 102.5 5 5]  % 9
-        [68.5 109.5 5 5]  % 10
-        [54.5 58.5 35 35]
+        [53.5 60.5 5 5]  % 8
+        [65.5 77.5 5 5]  % 9
+        [86.5 84.5 5 5]  % 10
+        [99.5 87.5 13 9]
     ]; 
 
 ROIrow1 = ceil(ROIInd(:,2));
@@ -51,54 +40,29 @@ ROIcolumn2 = floor(ROIInd(:,1))+floor(ROIInd(:,3));
 
 for i = 1:numel(ImgInfo)
     Img = ImgInfo(i).Img_corrected;
-    
-    j = 11;
-    ImgROI = Img(ROIrow1(j):ROIrow2(j),ROIcolumn1(j):ROIcolumn2(j));
-    imginten0 = mean(ImgROI(:));
+%     ind1 = -25; ind2 = 18;
+%     Img = TranslateFigure(Img,-ind1,-ind2);
 
+    j = size(ROIInd,1);
+    ImgROI = Img(ROIrow1(j):ROIrow2(j),ROIcolumn1(j):ROIcolumn2(j));
+    imginten0 = mean(ImgROI(:))
+    
     for j = 1:size(ROIInd,1)
         ImgROI = Img(ROIrow1(j):ROIrow2(j),ROIcolumn1(j):ROIcolumn2(j));
         ImgROI = ImgROI/imginten0;
         imginten(i,j) = mean(ImgROI(:));
         imgnoise(i,j) = std(ImgROI(:));
-        ImgInfo(i).ImgROI{j} = ImgROI;
         ImgInfo(i).ImgNor = ImgInfo(i).Img_corrected/imginten0;
     end
 end
 
-figure;imshow([ImgInfo.ImgNor],[])
-figure;imshow([ImgInfo.ImgNor],[0.2 2]);colorbar
-
-%% Stats
-stats = struct();
-tissuename = {'Air','Lung inhale','Lung exhale','Adipose Tissue','Breast','Water','Muscle','Liver','Trabecular Bone','Dense Bone'};
-count = 1;
-waterind = 6;
-for i = 1:numel(ImgInfo)
-    for j = [1,2,3,4,5,7,8,9,10]
-        inten_Water = mean(ImgInfo(i).ImgROI{waterind}(:));
-        ImgROI = ImgInfo(i).ImgROI{j}(:);
-        
-        for k = 1:numel(ImgROI)
-            stats(count).method = ImgInfo(i).Method;
-            stats(count).tissue = tissuename{j};
-            stats(count).Rep = k;
-            stats(count).value = (ImgROI(k)-inten_Water)/inten_Water*100;
-            count = count + 1;
-        end
-    end
-end
-
-T = struct2table(stats);
-filename = 'D:\datatest\PairProd\GoodResult\CTphantom_contraststats_allvoxels.csv';
-delete(filename)
-writetable(T,filename)
-
+figure;imshow([ImgInfo.ImgNor],[0.2 1.7])
 
 
 %%
-waterind = 6;
+waterind = 4;
 Contrast = (imginten-imginten(:,waterind))./repmat(imginten(:,waterind),[1,size(imginten,2)])*100;
+AtomicNum = [73,79,83];
 MarkerSize = 50;
 LineWidth = 2;
 % yyaxis right;
@@ -106,18 +70,22 @@ LineWidth = 2;
 % ylabel('Increased contrast to water (%), CT')
 % legend({'CT'})
 NumSamples = size(Contrast,2)-1;
-xsample = 1:NumSamples;
-selectedmethod = 1:5;
+xsample = 1:3;
+selectedmethod = [1,2,3,4];
 figure; 
 for method = selectedmethod
-    scatter(xsample,Contrast(method,xsample),MarkerSize,'o','filled'); hold on;
+    scatter(AtomicNum,Contrast(method,xsample),MarkerSize,'o','filled'); hold on;
 end
+refline;
 ylabel('Increased contrast to water (%)')
 legend({ImgInfo(selectedmethod).Method})
-xlabel('materials')
+xlabel('Atomic No')
 set(gca,'FontSize',15)
-saveas(gcf,'D:\datatest\PairProd\GoodResult\CTphantom_contrastplot.png');
-saveas(gcf,'D:\datatest\PairProd\GoodResult\CTphantom_contrastplot.pdf');
+saveas(gcf,'D:\datatest\PairProd\GoodResult\nanoparticle_limitedFOV_linearrelationship.png');
+saveas(gcf,'D:\datatest\PairProd\GoodResult\nanoparticle_limitedFOV_linearrelationship.pdf');
+
+
+
 
 % scatter(xsample,Contrast(1,xsample),MarkerSize,'o','filled'); hold on;
 % scatter(xsample,Contrast(2,xsample),MarkerSize,'+','LineWidth',LineWidth);  hold on;
@@ -146,7 +114,10 @@ saveas(gcf,'D:\datatest\PairProd\GoodResult\CTphantom_contrastplot.pdf');
 %%
 
 
-figure;imagesc([CT_Dose(:,:,end/2) PP_Dose(:,:,end/2)*10]); colorbar; colormap(jet)
+figure;imagesc(PP_Dose,[0,0.033]); colorbar; colormap(jet)
+axis off
+axis equal
+saveas(gcf, 'D:\datatest\PairProd\GoodResult\nanoparticleLimitedFOV_Dose_all.png')
 
 
 

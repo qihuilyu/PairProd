@@ -1,4 +1,4 @@
-function [mumap,densmap,Ind] = lookup_materials_bulk_density(ctnums)
+function [mumap,densmap,Ind,mumap_3MeV] = lookup_materials_bulk_density(ctnums)
 % % lut_dens2mat = [
 % %     (0.0,   mat_map["air"]      ),
 % %     (0.207, mat_map["lung_in"]  ),
@@ -39,11 +39,15 @@ Ind(Ind<1) = 1;
 % figure;imshow(Ind,[])
 
 
-%           air   lung_in   lung_ex  adipose   breast    water     muscle   liver   bone_trab   bone_comp   tumor  TumorAu005  TumorAu02 TumorAu05  TumorCa005  TumorCa02 TumorCa05
-maclist = [0.0086  0.0095   0.0095   0.0096    0.0095    0.0096    0.0095   0.0095     0.0089     0.0089    0.0096    0.0096    0.0096    0.0096      0.0096    0.0096    0.0096];
-rholist = [0.0,    0.207,    0.481,   0.919,    0.979,    1.004,    1.109,   1.113,    1.496,     1.654,    1.004,    1.004,    1.004,    1.004,      1.004,    1.004,    1.004 ];
+%                 air   lung_in   lung_ex  adipose   breast    water     muscle   liver   bone_trab   bone_comp   tumor  TumorAu005  TumorAu02 TumorAu05  TumorCa005  TumorCa02 TumorCa05
+maclist =      [0.0086  0.0095   0.0095   0.0096    0.0095    0.0096    0.0095   0.0095     0.0089     0.0089    0.0096    0.0096    0.0096    0.0096      0.0096    0.0096    0.0096];
+rholist =      [0.0,    0.207,    0.481,   0.919,    0.979,    1.004,    1.109,   1.113,    1.496,     1.654,    1.004,    1.004,    1.004,    1.004,      1.004,    1.004,    1.004 ];
+maclist_3MeV = [0.00397  0.00394  0.00394   0.0119   0.00394   0.00397  0.00393   0.00393   0.00375   0.00375    0.00397   0.00397   0.00397   0.00397    0.00397    0.00397   0.00397];
 % mathu = [-1024,   -800,     -522,    -150,     -58,     0,         198,      209,     1140,      1518,    41135,    42516,    43898,    45279,      46660,    48042,    49423];
 mulist = maclist.*rholist;
 mumap = reshape(mulist(Ind),size(ctnums));
+
+mulist_3MeV = maclist_3MeV.*rholist;
+mumap_3MeV = reshape(mulist_3MeV(Ind),size(ctnums));
 
 
